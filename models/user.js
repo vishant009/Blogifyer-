@@ -7,6 +7,7 @@ const userSchema = new Schema(
     fullname: {
       type: String,
       required: true,
+      trim: true,
     },
     email: {
       type: String,
@@ -42,10 +43,18 @@ const userSchema = new Schema(
     verificationCode: {
       type: String,
     },
+    verificationToken: {
+      // Added for secure email verification
+      type: String,
+    },
     verificationCodeExpires: {
       type: Date,
     },
     resetPasswordToken: {
+      type: String,
+    },
+    resetPasswordCode: {
+      // Added for two-factor reset
       type: String,
     },
     resetPasswordExpires: {
