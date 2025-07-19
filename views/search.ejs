@@ -1,39 +1,43 @@
-<%- include('partials/head') %>
-<%- include('partials/nav') %>
-
-<div class="container" style="max-width:800px;margin:auto;padding:2rem 1rem">
-  <form action="/search" method="get">
-    <input type="text" name="q" value="<%= query %>" placeholder="Search…" autofocus
-           style="width:100%;padding:.75rem;border-radius:var(--radius);border:1px solid var(--border);margin-bottom:1rem">
-  </form>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Search | Blogify</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    body{margin:0;background:#1a2634;color:#ecf0f1;font-family:Arial}
+    .container{max-width:800px;margin:2rem auto;padding:1rem}
+    .result{background:#2c3e50;margin-bottom:.8rem;padding:1rem;border-radius:8px;display:flex;align-items:center;gap:1rem}
+    .result img{width:40px;height:40px;border-radius:50%;object-fit:cover}
+    .result a{color:#3498db;text-decoration:none}
+  </style>
+</head>
+<body>
+<%- include('partials/header', { user }) %>
+<div class="container">
+  <h1>Search Results for "<%= query %>"</h1>
+  <% if(success_msg){ %><p style="color:#27ae60"><%= success_msg %></p><% } %>
+  <% if(error_msg){ %><p style="color:#e74c3c"><%= error_msg %></p><% } %>
 
   <h2>Users</h2>
-  <div class="grid grid-3">
+  <% if(users.length){ %>
     <% users.forEach(u=>{ %>
-      <div class="card flex">
-        <img src="<%= u.profileImageURL %>" class="avatar">
-        <div>
-          <a href="/profile/<%= u._id %>"><%= u.fullname %></a><br>
-          <small><%= u.followers.length %> followers</small>
-        </div>
+      <div class="result">
+        <img src="<%= u.profileImageURL %>">
+        <a href="/profile/<%= u._id %>"><%= u.fullname %></a>
       </div>
     <% }) %>
-  </div>
+  <% }else{ %><p>No users.</p><% } %>
 
-  <h2 style="margin-top:2rem">Blogs</h2>
-  <div class="grid grid-3">
+  <h2>Blogs</h2>
+  <% if(blogs.length){ %>
     <% blogs.forEach(b=>{ %>
-      <article class="card">
-        <a href="/blog/<%= b._id %>">
-          <img src="<%= b.coverImage || '/images/default-cover.jpg' %>" style="border-radius:var(--radius);margin-bottom:.5rem">
-        </a>
-        <h3><a href="/blog/<%= b._id %>"><%= b.title %></a></h3>
-        <small style="color:var(--text-soft)"><%= b.createdBy.fullname %></small>
-      </article>
+      <div class="result">
+        <a href="/blog/<%= b._id %>"><%= b.title %></a> – <small><%= moment(b.createdAt).fromNow() %></small>
+      </div>
     <% }) %>
-  </div>
-
-  <% if(!users.length && !blogs.length && query){ %>
-    <p style="text-align:center;color:var(--text-soft)">No results for “<%= query %>”.</p>
-  <% } %>
+  <% }else{ %><p>No blogs.</p><% } %>
 </div>
+</body>
+</html>
