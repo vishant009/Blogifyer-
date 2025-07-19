@@ -1,402 +1,85 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Settings | Blogify</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <style>
-    body {
-      background-color: #1a2634;
-      color: #ecf0f1;
-      margin: 0;
-      font-family: 'Arial', sans-serif;
-    }
-    .container {
-      max-width: 800px;
-      margin: 2rem auto;
-      padding: 2rem;
-      background-color: #2c3e50;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    }
-    .settings-section {
-      margin-bottom: 2rem;
-    }
-    .settings-section h2 {
-      font-size: 1.5rem;
-      margin-bottom: 1rem;
-      color: #ecf0f1;
-    }
-    .settings-action {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      padding: 1rem;
-      background-color: #34495e;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-    .settings-action:hover {
-      background-color: #3e5a75;
-    }
-    .settings-action.delete-account-btn {
-      background-color: #e74c3c;
-    }
-    .settings-action.delete-account-btn:hover {
-      background-color: #c0392b;
-    }
-    .popup {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background-color: #2c3e50;
-      padding: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      z-index: 2000;
-      max-width: 400px;
-      width: 90%;
-      max-height: 80vh;
-      overflow-y: auto;
-      animation: fadeIn 0.3s ease-in-out;
-    }
-    .popup-overlay {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
-      z-index: 1500;
-    }
-    .close-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: none;
-      border: none;
-      color: #ecf0f1;
-      font-size: 1.2rem;
-      cursor: pointer;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translate(-50%, -60%); }
-      to { opacity: 1; transform: translate(-50%, -50%); }
-    }
-    input, textarea {
-      padding: 0.75rem;
-      border: 1px solid #34495e;
-      border-radius: 4px;
-      font-size: 1rem;
-      background-color: #34495e;
-      color: #ecf0f1;
-      width: 100%;
-      transition: border-color 0.3s;
-    }
-    input:focus, textarea:focus {
-      border-color: #3498db;
-    }
-    button {
-      padding: 0.75rem;
-      background-color: #3498db;
-      color: #ecf0f1;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 1rem;
-      transition: background-color 0.3s, transform 0.2s;
-    }
-    button.delete-btn {
-      background-color: #e74c3c;
-    }
-    button.delete-btn:hover {
-      background-color: #c0392b;
-      transform: scale(1.05);
-    }
-    button:hover {
-      background-color: #2980b9;
-      transform: scale(1.05);
-    }
-    button:disabled {
-      background-color: #7f8c8d;
-      cursor: not-allowed;
-      transform: none;
-    }
-    .message {
-      display: none;
-      padding: 0.75rem;
-      margin-bottom: 1rem;
-      border-radius: 4px;
-      font-size: 0.9rem;
-    }
-    .success {
-      background-color: #d4edda;
-      color: #155724;
-    }
-    .error {
-      background-color: #f8d7da;
-      color: #721c24;
-    }
-    @media (max-width: 768px) {
-      .container { margin: 1rem; padding: 1rem; }
-      .popup { width: 95%; }
-    }
+    body{margin:0;background:#1a2634;color:#ecf0f1;font-family:Arial}
+    .container{max-width:700px;margin:2rem auto;padding:1rem}
+    .section{background:#2c3e50;margin-bottom:1rem;padding:1rem;border-radius:8px}
+    h2{margin-top:0}
+    label{display:block;margin:.5rem 0}
+    input,textarea,select{width:100%;padding:.5rem;border:1px solid #34495e;border-radius:4px;background:#34495e;color:#ecf0f1}
+    button{padding:.5rem 1rem;border:none;border-radius:4px;background:#3498db;color:#fff;cursor:pointer;margin-top:.5rem}
+    .danger{background:#e74c3c}
+    .popup{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#2c3e50;padding:1.5rem;border-radius:8px;z-index:1000;max-width:90%}
+    .overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6)}
+    .close{float:right;font-size:1.2rem;cursor:pointer}
   </style>
 </head>
 <body>
-  <%- include('partials/header', { user }) %>
+<%- include('partials/header', { user }) %>
+<div class="container">
+  <% if(success_msg){ %><div style="color:#27ae60"><%= success_msg %></div><% } %>
+  <% if(error_msg){ %><div style="color:#e74c3c"><%= error_msg %></div><% } %>
 
-  <div class="container">
-    <% if (success_msg) { %>
-      <p class="message success" style="display: block;">
-        <i class="fas fa-check-circle"></i> <%= success_msg %>
-      </p>
-    <% } %>
-    <% if (error_msg) { %>
-      <p class="message error" style="display: block;">
-        <i class="fas fa-exclamation-circle"></i> <%= error_msg %>
-      </p>
-    <% } %>
-
-    <div class="settings-section">
-      <h2>Settings</h2>
-      <div class="settings-action update-profile-btn">
-        <i class="fas fa-user-edit"></i>
-        <span>Update Profile</span>
-      </div>
-      <div class="settings-action privacy-security-btn">
-        <i class="fas fa-shield-alt"></i>
-        <span>Privacy/Security</span>
-      </div>
-      <div class="settings-action delete-account-btn">
-        <i class="fas fa-trash-alt"></i>
-        <span>Delete Account</span>
-      </div>
-    </div>
-
-    <!-- Update Profile Popup -->
-    <div class="popup update-profile-popup">
-      <h3 style="color: #ecf0f1; margin-bottom: 1rem;">Update Profile</h3>
-      <button class="close-btn close-update-profile" aria-label="Close Update Profile Popup">
-        <i class="fas fa-times"></i>
-      </button>
-      <form action="/settings/update-profile" method="POST" enctype="multipart/form-data" style="
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-      ">
-        <label for="fullname" style="color: #ecf0f1;">Username</label>
-        <input type="text" id="fullname" name="fullname" value="<%= user.fullname %>" aria-label="Username" required>
-        <label for="bio" style="color: #ecf0f1;">Bio</label>
-        <textarea id="bio" name="bio" aria-label="Bio" style="resize: vertical; min-height: 100px;"><%= user.bio || '' %></textarea>
-        <label for="profileImage" style="color: #ecf0f1;">Profile Image</label>
-        <input type="file" id="profileImage" name="profileImage" accept="image/*" aria-label="Profile Image">
-        <button type="submit">
-          <i class="fas fa-save"></i> Update Profile
-        </button>
-      </form>
-    </div>
-
-    <!-- Privacy/Security Popup -->
-    <div class="popup privacy-security-popup">
-      <h3 style="color: #ecf0f1; margin-bottom: 1rem;">Request Password Reset</h3>
-      <button class="close-btn close-privacy-security" aria-label="Close Privacy/Security Popup">
-        <i class="fas fa-times"></i>
-      </button>
-      <p id="password-message" class="message" aria-live="polite"></p>
-      <form id="password-form" style="
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-      ">
-        <p style="color: #ecf0f1;">Click below to receive a password reset link via email.</p>
-        <button type="submit" id="password-submit">
-          <i class="fas fa-paper-plane"></i> Send Password Reset Link
-        </button>
-      </form>
-    </div>
-
-    <!-- Delete Account Popup -->
-    <div class="popup delete-account-popup">
-      <h3 style="color: #ecf0f1; margin-bottom: 1rem;">Delete Account</h3>
-      <button class="close-btn close-delete-account" aria-label="Close Delete Account Popup">
-        <i class="fas fa-times"></i>
-      </button>
-      <p id="delete-message" class="message" aria-live="polite"></p>
-      <form id="delete-account-form" style="
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-      ">
-        <p style="color: #ecf0f1;">Enter your password to confirm account deletion. This action is irreversible.</p>
-        <label for="delete-password" style="color: #ecf0f1;">Password</label>
-        <input type="password" id="delete-password" name="password" aria-label="Password" required>
-        <button type="submit" id="delete-submit" class="delete-btn">
-          <i class="fas fa-trash-alt"></i> Delete Account
-        </button>
-      </form>
-    </div>
-
-    <div class="popup-overlay"></div>
+  <div class="section">
+    <h2>Update Profile</h2>
+    <form action="/settings/update-profile" method="POST" enctype="multipart/form-data">
+      <label>Username</label>
+      <input type="text" name="fullname" value="<%= user.fullname %>">
+      <label>Bio</label>
+      <textarea name="bio"><%= user.bio||'' %></textarea>
+      <label>Profile Image</label>
+      <input type="file" name="profileImage" accept="image/*">
+      <label>Visibility</label>
+      <select name="visibility">
+        <option value="public" <%= user.profileVisibility==='public'?'selected':'' %>>Public</option>
+        <option value="followers" <%= user.profileVisibility==='followers'?'selected':'' %>>Followers</option>
+        <option value="private" <%= user.profileVisibility==='private'?'selected':'' %>>Private</option>
+      </select>
+      <button type="submit">Save</button>
+    </form>
   </div>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const updateProfileBtn = document.querySelector('.update-profile-btn');
-      const privacySecurityBtn = document.querySelector('.privacy-security-btn');
-      const deleteAccountBtn = document.querySelector('.delete-account-btn');
-      const updateProfilePopup = document.querySelector('.update-profile-popup');
-      const privacySecurityPopup = document.querySelector('.privacy-security-popup');
-      const deleteAccountPopup = document.querySelector('.delete-account-popup');
-      const closeUpdateProfile = document.querySelector('.close-update-profile');
-      const closePrivacySecurity = document.querySelector('.close-privacy-security');
-      const closeDeleteAccount = document.querySelector('.close-delete-account');
-      const overlay = document.querySelector('.popup-overlay');
-      const passwordForm = document.querySelector('#password-form');
-      const passwordMessage = document.querySelector('#password-message');
-      const passwordSubmit = document.querySelector('#password-submit');
-      const deleteAccountForm = document.querySelector('#delete-account-form');
-      const deleteMessage = document.querySelector('#delete-message');
-      const deleteSubmit = document.querySelector('#delete-submit');
+  <div class="section">
+    <h2>Security</h2>
+    <button onclick="openPopup('passPopup')">Request Password Reset</button>
+  </div>
 
-      const showPopup = (popup) => {
-        if (popup) {
-          popup.style.display = 'block';
-          overlay.style.display = 'block';
-          const focusableEls = popup.querySelectorAll('a, button, input, textarea');
-          if (focusableEls.length > 0) focusableEls[0].focus();
-        }
-      };
+  <div class="section">
+    <h2>Danger Zone</h2>
+    <button class="danger" onclick="openPopup('delPopup')">Delete Account</button>
+  </div>
+</div>
 
-      const hidePopup = (popup) => {
-        if (popup) popup.style.display = 'none';
-        overlay.style.display = 'none';
-      };
+<!-- popups -->
+<div class="overlay" id="overlay"></div>
+<div class="popup" id="passPopup">
+  <span class="close" onclick="closePopup('passPopup')">&times;</span>
+  <h3>Reset Password</h3>
+  <p>We’ll email you a reset link.</p>
+  <button onclick="requestReset()">Send Link</button>
+</div>
+<div class="popup" id="delPopup">
+  <span class="close" onclick="closePopup('delPopup')">&times;</span>
+  <h3>Delete Account</h3>
+  <p>Enter your password to confirm.</p>
+  <input type="password" id="delPass" placeholder="Password">
+  <button class="danger" onclick="deleteAccount()">Delete</button>
+</div>
 
-      const showMessage = (element, message, type) => {
-        element.textContent = message;
-        element.className = `message ${type}`;
-        element.style.display = 'block';
-      };
-
-      const setLoading = (button, isLoading) => {
-        button.disabled = isLoading;
-        button.style.opacity = isLoading ? '0.7' : '1';
-        button.innerHTML = isLoading
-          ? '<i class="fas fa-spinner fa-spin"></i> Processing...'
-          : button.classList.contains('delete-btn')
-          ? '<i class="fas fa-trash-alt"></i> Delete Account'
-          : '<i class="fas fa-paper-plane"></i> Send Password Reset Link';
-      };
-
-      // Update Profile Popup
-      if (updateProfileBtn && updateProfilePopup) {
-        updateProfileBtn.addEventListener('click', () => showPopup(updateProfilePopup));
-      }
-      if (closeUpdateProfile && updateProfilePopup) {
-        closeUpdateProfile.addEventListener('click', () => hidePopup(updateProfilePopup));
-      }
-
-      // Privacy/Security Popup
-      if (privacySecurityBtn && privacySecurityPopup) {
-        privacySecurityBtn.addEventListener('click', () => {
-          passwordForm.style.display = 'flex';
-          passwordMessage.style.display = 'none';
-          showPopup(privacySecurityPopup);
-        });
-      }
-      if (closePrivacySecurity && privacySecurityPopup) {
-        closePrivacySecurity.addEventListener('click', () => hidePopup(privacySecurityPopup));
-      }
-
-      // Delete Account Popup
-      if (deleteAccountBtn && deleteAccountPopup) {
-        deleteAccountBtn.addEventListener('click', () => {
-          deleteAccountForm.style.display = 'flex';
-          deleteMessage.style.display = 'none';
-          showPopup(deleteAccountPopup);
-        });
-      }
-      if (closeDeleteAccount && deleteAccountPopup) {
-        closeDeleteAccount.addEventListener('click', () => hidePopup(deleteAccountPopup));
-      }
-
-      // Overlay and Escape Key Handling
-      overlay.addEventListener('click', () => {
-        hidePopup(updateProfilePopup);
-        hidePopup(privacySecurityPopup);
-        hidePopup(deleteAccountPopup);
-      });
-
-      window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          hidePopup(updateProfilePopup);
-          hidePopup(privacySecurityPopup);
-          hidePopup(deleteAccountPopup);
-        }
-      });
-
-      // Password Reset Form Submission
-      if (passwordForm) {
-        passwordForm.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          setLoading(passwordSubmit, true);
-          try {
-            const response = await fetch('/settings/request-password-reset', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({}),
-            });
-            const data = await response.json();
-            setLoading(passwordSubmit, false);
-            if (data.success) {
-              showMessage(passwordMessage, 'Password reset link sent to your email', 'success');
-              setTimeout(() => hidePopup(privacySecurityPopup), 2000);
-            } else {
-              showMessage(passwordMessage, data.error || 'Error sending password reset link', 'error');
-            }
-          } catch (err) {
-            setLoading(passwordSubmit, false);
-            showMessage(passwordMessage, 'Error sending password reset link', 'error');
-          }
-        });
-      }
-
-      // Delete Account Form Submission
-      if (deleteAccountForm) {
-        deleteAccountForm.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          setLoading(deleteSubmit, true);
-          const password = document.querySelector('#delete-password').value;
-
-          try {
-            const response = await fetch('/settings/delete-account', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ password }),
-            });
-            const data = await response.json();
-            setLoading(deleteSubmit, false);
-            if (data.success) {
-              showMessage(deleteMessage, 'Account deleted successfully. Redirecting...', 'success');
-              setTimeout(() => {
-                window.location.href = '/?success_msg=Account deleted successfully';
-              }, 2000);
-            } else {
-              showMessage(deleteMessage, data.error || 'Error deleting account', 'error');
-            }
-          } catch (err) {
-            setLoading(deleteSubmit, false);
-            showMessage(deleteMessage, 'Error deleting account', 'error');
-          }
-        });
-      }
-    });
-  </script>
+<script>
+  const openPopup=id=>{document.getElementById(id).style.display='block';document.getElementById('overlay').style.display='block'}
+  const closePopup=id=>{document.getElementById(id).style.display='none';document.getElementById('overlay').style.display='none'}
+  const requestReset=()=>fetch('/settings/request-password-reset',{method:'POST',headers:{'Content-Type':'application/json'}}).then(r=>r.json()).then(d=>alert(d.message||d.error))
+  const deleteAccount=()=>{
+    const p=document.getElementById('delPass').value
+    fetch('/settings/delete-account',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:p})})
+    .then(r=>r.json()).then(d=>{if(d.success){location.href='/?success_msg=Account+deleted'}else alert(d.error)})
+  }
+</script>
 </body>
 </html>
