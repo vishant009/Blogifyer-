@@ -1,96 +1,97 @@
 const { Router } = require('express');
 const Notification = require('../models/notification');
 const User = require('../models/user');
+const { ensureAuthenticated } = require('../middlewares/auth');
 
 const router = Router();
 
-const renderNotifications = (res, user, notifications, messages = {}) => {
-  return res.render('notifications', {
-    user: user || null,
-    notifications,
-    success_msg: messages.success_msg || null,
-    error_msg: messages.error_msg || null,
-    csrfToken: res.csrfToken()
-  });
-};
-
-router.get('/', async (req, res) => {
+// Get all notifications for the logged-in user
+router.get('/', ensureAuthenticated, async (req, res) => {
   try {
-    if (!req.user) {
-      return res.redirect('/user/signin?error_msg=Please log in to view notifications');
-    }
     const notifications = await Notification.find({ recipient: req.user._id })
       .populate('sender', 'fullname profileImageURL')
-      .populate('blogId', 'title')
       .sort({ createdAt: -1 });
-    renderNotifications(res, req.user, notifications, {
-      success_msg: req.query.success_msg,
-      error_msg: req.query.error_msg
+    res.render('notifications', {
+      user: req.user,
+      notifications,
+      error_msg: req.query.error_msg || null,
+      success_msg: req.query.success_msg || null,
+      csrfToken: req.csrfToken()
     });
   } catch (err) {
-    console.error('Error loading notifications:', err);
-    renderNotifications(res, req.user, [], { error_msg: 'Failed to load notifications' });
+    console.error('Error fetching notifications:', err);
+    res.redirect('/?error_msg=Failed to load notifications');
   }
 });
 
-router.post('/accept/:id', async (req, res) => {
+// Mark a notification as read
+router.post('/read/:id', ensureAuthenticated, async (req, res) => {
   try {
-    if (!req.user) {
-      return res.redirect('/notification?error_msg=Please log in to accept follow requests');
+    const notification = await Notification.findOne({
+      _id: req.params.id,
+      recipient: req.user._id
+    });
+    if (!notification) {
+      return res.redirect('/notification?error_msg=Notification not found');
     }
-    const notification = await Notification.findById(req.params.id);
-    if (!notification || notification.recipient.toString() !== req.user._id.toString()) {
-      return res.redirect('/notification?error_msg=Notification not found or unauthorized');
-    }
-    if (notification.type !== 'FOLLOW_REQUEST' || notification.status !== 'PENDING') {
-      return res.redirect('/notification?error_msg=Invalid or already processed notification');
-    }
-    await Promise.all([
-      User.findByIdAndUpdate(req.user._id, { $addToSet: { followers: notification.sender } }, { new: true }),
-      User.findByIdAndUpdate(notification.sender, { $addToSet: { following: req.user._id } }, { new: true }),
-      Notification.findByIdAndUpdate(req.params.id, { status: 'ACCEPTED' }, { new: true })
-    ]);
-    return res.redirect('/notification?success_msg=Follow request accepted');
-  } catch (err) {
-    console.error('Error accepting follow request:', err);
-    return res.redirect('/notification?error_msg=Failed to accept follow request');
-  }
-});
-
-router.post('/reject/:id', async (req, res) => {
-  try {
-    if (!req.user) {
-      return res.redirect('/user/signin?error_msg=Please log in to reject follow requests');
-    }
-    const notification = await Notification.findById(req.params.id);
-    if (!notification || notification.recipient.toString() !== req.user._id.toString()) {
-      return res.redirect('/notification?error_msg=Notification not found or unauthorized');
-    }
-    if (notification.type !== 'FOLLOW_REQUEST' || notification.status !== 'PENDING') {
-      return res.redirect('/notification?error_msg=Invalid or already processed notification');
-    }
-    await Notification.findByIdAndUpdate(req.params.id, { status: 'REJECTED' }, { new: true });
-    return res.redirect('/notification?success_msg=Follow request rejected');
-  } catch (err) {
-    console.error('Error rejecting follow request:', err);
-    return res.redirect('/notification?error_msg=Failed to reject follow request');
-  }
-});
-
-router.post('/read/:id', async (req, res) => {
-  try {
-    if (!req.user) {
-      return res.redirect('/user/signin?error_msg=Please log in to mark notifications as read');
-    }
-    const notification = await Notification.findById(req.params.id);
-    if (!notification || notification.recipient.toString() !== req.user._id.toString()) {
-      return res.redirect('/notification?error_msg=Notification not found or unauthorized');
-    }
-    await Notification.findByIdAndUpdate(req.params.id, { status: 'READ' }, { new: true });
-    return res.redirect('/notification?success_msg=Notification marked as read');
+    notification.status = 'READ';
+    await notification.save();
+    res.redirect('/notification?success_msg=Notification marked as read');
   } catch (err) {
     console.error('Error marking notification as read:', err);
-    return res.redirect('/notification?error_msg=Failed to mark notification as read');
+    res.redirect('/notification?error_msg=Failed to mark notification as read');
+  }
+});
+
+// Accept a follow request
+router.post('/accept/:id', ensureAuthenticated, async (req, res) => {
+  try {
+    const notification = await Notification.findOne({
+      _id: req.params.id,
+      recipient: req.user._id,
+      type: 'FOLLOW_REQUEST',
+      status: 'PENDING'
+    });
+    if (!notification) {
+      return res.redirect('/notification?error_msg=Follow request not found');
+    }
+    const sender = await User.findById(notification.sender);
+    const recipient = await User.findById(req.user._id);
+    if (!sender || !recipient) {
+      return res.redirect('/notification?error_msg=User not found');
+    }
+    if (!recipient.followers.includes(sender._id)) {
+      recipient.followers.push(sender._id);
+      sender.following.push(recipient._id);
+      await Promise.all([recipient.save(), sender.save()]);
+    }
+    notification.status = 'ACCEPTED';
+    await notification.save();
+    res.redirect('/notification?success_msg=Follow request accepted');
+  } catch (err) {
+    console.error('Error accepting follow request:', err);
+    res.redirect('/notification?error_msg=Failed to accept follow request');
+  }
+});
+
+// Reject a follow request
+router.post('/reject/:id', ensureAuthenticated, async (req, res) => {
+  try {
+    const notification = await Notification.findOne({
+      _id: req.params.id,
+      recipient: req.user._id,
+      type: 'FOLLOW_REQUEST',
+      status: 'PENDING'
+    });
+    if (!notification) {
+      return res.redirect('/notification?error_msg=Follow request not found');
+    }
+    notification.status = 'REJECTED';
+    await notification.save();
+    res.redirect('/notification?success_msg=Follow request rejected');
+  } catch (err) {
+    console.error('Error rejecting follow request:', err);
+    res.redirect('/notification?error_msg=Failed to reject follow request');
   }
 });
 
