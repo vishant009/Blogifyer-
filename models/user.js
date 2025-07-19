@@ -44,7 +44,6 @@ const userSchema = new Schema(
       type: String,
     },
     verificationToken: {
-      // Added for secure email verification
       type: String,
     },
     verificationCodeExpires: {
@@ -54,11 +53,15 @@ const userSchema = new Schema(
       type: String,
     },
     resetPasswordCode: {
-      // Added for two-factor reset
       type: String,
     },
     resetPasswordExpires: {
       type: Date,
+    },
+    profileVisibility: {
+      type: String,
+      enum: ["public", "followers", "private"],
+      default: "public",
     },
   },
   { timestamps: true }
