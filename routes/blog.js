@@ -13,8 +13,32 @@ router.get("/addBlog", (req, res) =>
     user: req.user || null,
     error_msg: req.query.error_msg || null,
     success_msg: req.query.success_msg || null,
+    categories: ["Technology", "Lifestyle", "Education", "Travel", "Food", "Other"],
   })
 );
+
+// GET /blog/edit/:id
+router.get("/edit/:id", async (req, res) => {
+  try {
+    if (!req.user) return res.redirect("/user/signin?error_msg=Please log in to edit a blog");
+    const blog = await Blog.findById(req.params.id);
+    if (!blog) return res.redirect("/?error_msg=Blog not found");
+    if (blog.createdBy.toString() !== req.user._id.toString()) {
+      return res.redirect("/?error_msg=Unauthorized to edit this blog");
+    }
+
+    return res.render("editBlog", {
+      user: req.user || null,
+      blog,
+      categories: ["Technology", "Lifestyle", "Education", "Travel", "Food", "Other"],
+      error_msg: req.query.error_msg || null,
+      success_msg: req.query.success_msg || null,
+    });
+  } catch (err) {
+    console.error("Error loading edit blog page:", err);
+    return res.redirect("/?error_msg=Failed to load blog");
+  }
+});
 
 // GET /blog/:id
 router.get("/:id", async (req, res) => {
@@ -23,11 +47,15 @@ router.get("/:id", async (req, res) => {
       .populate("createdBy", "fullname email profileImageURL")
       .populate("likes", "fullname profileImageURL");
 
-    const comments = await Comment.find({ blogId: req.params.id })
-      .populate("createdBy", "fullname profileImageURL")
-      .sort({ createdAt: -1 });
+    if (!blog || blog.status !== "published") return res.redirect("/?error_msg=Blog not found");
 
-    if (!blog) return res.redirect("/?error_msg=Blog not found");
+    const comments = await Comment.find({ blogId: req.params.id, parentCommentId: null })
+      .populate("createdBy", "fullname profileImageURL")
+      .populate({
+        path: "replies",
+        populate: { path: "createdBy", select: "fullname profileImageURL" },
+      })
+      .sort({ createdAt: -1 });
 
     return res.render("blog", {
       user: req.user || null,
@@ -46,18 +74,57 @@ router.get("/:id", async (req, res) => {
 router.post("/", cloudinaryUpload.single("coverImage"), async (req, res) => {
   try {
     if (!req.user) return res.redirect("/blog/addBlog?error_msg=Login required");
-    const { title, body } = req.body;
+    const { title, body, category, tags, status } = req.body;
+    
+    if (!title?.trim() || !body?.trim()) {
+      return res.redirect("/blog/addBlog?error_msg=Title and body are required");
+    }
+
     const blog = await Blog.create({
       body,
       title,
       createdBy: req.user._id,
-      coverImage: req.file ? req.file.path : null, // Cloudinary url
+      coverImage: req.file ? req.file.path : null,
+      category: category || "Other",
+      tags: tags ? tags.split(",").map(tag => tag.trim()).filter(tag => tag) : [],
+      status: status === "draft" ? "draft" : "published",
       likes: [],
     });
-    return res.redirect(`/blog/${blog._id}?success_msg=Blog created`);
+
+    return res.redirect(`/blog/${blog._id}?success_msg=Blog ${status === "draft" ? "saved as draft" : "created"}`);
   } catch (err) {
     console.error("Error creating blog:", err);
     return res.redirect("/blog/addBlog?error_msg=Failed to create blog");
+  }
+});
+
+// PUT /blog/:id
+router.put("/:id", cloudinaryUpload.single("coverImage"), async (req, res) => {
+  try {
+    if (!req.user) return res.redirect("/user/signin?error_msg=Please log in to edit a blog");
+    const { title, body, category, tags, status } = req.body;
+    const blog = await Blog.findById(req.params.id);
+    if (!blog) return res.redirect("/?error_msg=Blog not found");
+    if (blog.createdBy.toString() !== req.user._id.toString()) {
+      return res.redirect("/?error_msg=Unauthorized to edit this blog");
+    }
+
+    if (!title?.trim() || !body?.trim()) {
+      return res.redirect(`/blog/edit/${req.params.id}?error_msg=Title and body are required`);
+    }
+
+    blog.title = title;
+    blog.body = body;
+    blog.category = category || "Other";
+    blog.tags = tags ? tags.split(",").map(tag => tag.trim()).filter(tag => tag) : [];
+    blog.status = status === "draft" ? "draft" : "published";
+    if (req.file) blog.coverImage = req.file.path;
+
+    await blog.save();
+    return res.redirect(`/blog/${blog._id}?success_msg=Blog updated successfully`);
+  } catch (err) {
+    console.error("Error updating blog:", err);
+    return res.redirect(`/blog/edit/${req.params.id}?error_msg=Failed to update blog`);
   }
 });
 
@@ -112,7 +179,6 @@ router.post("/:id/like", async (req, res) => {
       blog.likes.push(req.user._id);
       user.likedBlogs.push(req.params.id);
 
-      // Check for existing like notification
       const existingLikeNotification = await Notification.findOne({
         sender: req.user._id,
         recipient: blog.createdBy._id,
@@ -137,6 +203,27 @@ router.post("/:id/like", async (req, res) => {
   } catch (err) {
     console.error("Error liking blog:", err);
     return res.redirect(`/blog/${req.params.id}?error_msg=Failed to like blog`);
+  }
+});
+
+// GET /blog/drafts
+router.get("/drafts", async (req, res) => {
+  try {
+    if (!req.user) return res.redirect("/user/signin?error_msg=Please log in to view drafts");
+    
+    const drafts = await Blog.find({ createdBy: req.user._id, status: "draft" })
+      .populate("createdBy", "fullname profileImageURL")
+      .sort({ createdAt: -1 });
+
+    return res.render("drafts", {
+      user: req.user || null,
+      drafts,
+      error_msg: req.query.error_msg || null,
+      success_msg: req.query.success_msg || null,
+    });
+  } catch (err) {
+    console.error("Error loading drafts:", err);
+    return res.redirect("/?error_msg=Failed to load drafts");
   }
 });
 
