@@ -1,5 +1,4 @@
 const { Router } = require('express');
-const { randomBytes, createHmac } = require('crypto'); // ✅ ADDED
 const User = require('../models/user');
 const Blog = require('../models/blog');
 const cloudinaryUpload = require('../middlewares/cloudinaryUpload');
@@ -109,12 +108,10 @@ router.post('/', cloudinaryUpload.single('profileImage'), async (req, res) => {
       update.email = e;
     }
     if (password) {
-      if (password.length < 6) {
-        return res.redirect('/profile?error_msg=Password must be at least 6 characters');
+      if (password.length < 8) {
+        return res.redirect('/profile?error_msg=Password must be at least 8 characters');
       }
-      const salt = randomBytes(16).toString('hex');
-      update.salt = salt;
-      update.password = createHmac('sha256', salt).update(password).digest('hex');
+      update.password = password;
     }
     if (req.file) update.profileImageURL = req.file.path;
     if (bio?.trim()) update.bio = bio.trim();
