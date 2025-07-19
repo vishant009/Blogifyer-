@@ -1,5 +1,5 @@
 const { Router } = require('express');
-const { createHmac } = require('crypto'); // ✅ ADDED
+const sanitizeHtml = require('sanitize-html');
 const Blog = require('../models/blog');
 const Comment = require('../models/comments');
 const User = require('../models/user');
@@ -71,9 +71,13 @@ router.post('/', cloudinaryUpload.single('coverImage'), async (req, res) => {
     if (!title?.trim() || !body?.trim()) {
       return res.redirect('/blog/addBlog?error_msg=Title and body are required');
     }
+    const sanitizedBody = sanitizeHtml(body, {
+      allowedTags: ['b', 'i', 'em', 'strong', 'a', 'p', 'div'],
+      allowedAttributes: { 'a': ['href'] }
+    });
     const blog = await Blog.create({
-      body,
-      title,
+      body: sanitizedBody,
+      title: title.trim(),
       createdBy: req.user._id,
       coverImage: req.file ? req.file.path : null,
       category: category || 'Other',
@@ -100,8 +104,12 @@ router.put('/:id', cloudinaryUpload.single('coverImage'), async (req, res) => {
     if (!title?.trim() || !body?.trim()) {
       return res.redirect(`/blog/edit/${req.params.id}?error_msg=Title and body are required`);
     }
-    blog.title = title;
-    blog.body = body;
+    const sanitizedBody = sanitizeHtml(body, {
+      allowedTags: ['b', 'i', 'em', 'strong', 'a', 'p', 'div'],
+      allowedAttributes: { 'a': ['href'] }
+    });
+    blog.title = title.trim();
+    blog.body = sanitizedBody;
     blog.category = category || 'Other';
     blog.tags = tags ? tags.split(',').map((tag) => tag.trim()).filter((tag) => tag) : [];
     blog.status = status === 'draft' ? 'draft' : 'published';
