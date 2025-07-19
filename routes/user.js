@@ -1,6 +1,6 @@
-// routes/user.js
 const express = require('express');
 const router = express.Router();
+const { createHmac } = require('crypto'); // ✅ ADDED
 const bcrypt = require('bcryptjs');
 const User = require('../models/user');
 const { ensureAuthenticated, ensureNotAuthenticated } = require('../middlewares/auth');
