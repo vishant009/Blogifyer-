@@ -1,12 +1,11 @@
 const { Router } = require('express');
-const { randomBytes, createHmac } = require('crypto'); // ✅ ADDED
 const User = require('../models/user');
 const Blog = require('../models/blog');
 const Comment = require('../models/comments');
 const Notification = require('../models/notification');
-const { sendEmail } = require('../middlewares/nodemailer');
 const cloudinaryUpload = require('../middlewares/cloudinaryUpload');
 const { createTokenForUser } = require('../services/authentication');
+const { requestPasswordReset } = require('../services/passwordReset');
 
 const router = Router();
 
@@ -68,18 +67,7 @@ router.post('/request-password-reset', async (req, res) => {
     if (!user) {
       return res.json({ success: false, error: 'User not found' });
     }
-    const resetToken = randomBytes(32).toString('hex');
-    user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = Date.now() + 3600000;
-    await user.save();
-
-    const resetUrl = `http://${req.headers.host}/settings/reset-password/${user._id}/${resetToken}`;
-    await sendEmail({
-      to: user.email,
-      subject: 'Blogify Password Reset',
-      html: `<p>Click <a href="${resetUrl}">here</a> to reset your password. This link expires in 1 hour.</p>`
-    });
-
+    await requestPasswordReset(user, req);
     return res.json({ success: true, message: 'Password reset link sent to your email' });
   } catch (err) {
     console.error('Error sending reset link:', err);
@@ -132,9 +120,7 @@ router.post('/reset-password', async (req, res) => {
     if (!user || user.resetPasswordToken !== token || user.resetPasswordExpires < Date.now()) {
       return res.redirect('/settings?error_msg=Invalid or expired reset link');
     }
-    const salt = randomBytes(16).toString('hex');
-    user.salt = salt;
-    user.password = createHmac('sha256', salt).update(password).digest('hex');
+    user.password = password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
@@ -164,8 +150,8 @@ router.post('/delete-account', async (req, res) => {
     if (!user) {
       return res.json({ success: false, error: 'User not found' });
     }
-    const userProvidedHash = createHmac('sha256', user.salt).update(password).digest('hex');
-    if (userProvidedHash !== user.password) {
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
       return res.json({ success: false, error: 'Incorrect password' });
     }
     await Promise.all([
