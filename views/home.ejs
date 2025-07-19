@@ -30,10 +30,7 @@
 <body>
 <header>
   <a href="/" class="logo"><i class="fas fa-blog"></i> Blogify</a>
-  <form action="/search" method="GET">
-    <input name="q" placeholder="Search…" required>
-    <button><i class="fas fa-search"></i></button>
-  </form>
+  <form action="/search" method="GET"><input name="q" placeholder="Search…" required><button><i class="fas fa-search"></i></button></form>
   <% if(user){ %>
     <img src="<%= user.profileImageURL||'/default.png' %>" style="width:32px;height:32px;border-radius:50%;cursor:pointer" onclick="toggleMenu()">
     <div id="menu" style="display:none;position:absolute;right:1rem;top:50px;background:#2c3e50;border:1px solid #34495e;border-radius:4px">
@@ -43,10 +40,7 @@
       <a href="/user/logout" style="display:block;padding:.5rem;color:#fff;text-decoration:none">Logout</a>
     </div>
   <% }else{ %>
-    <div>
-      <a href="/user/signin" style="color:#fff;margin-right:1rem">Sign In</a>
-      <a href="/user/signup" style="color:#fff">Sign Up</a>
-    </div>
+    <div><a href="/user/signin" style="color:#fff;margin-right:1rem">Sign In</a><a href="/user/signup" style="color:#fff">Sign Up</a></div>
   <% } %>
 </header>
 
@@ -88,8 +82,6 @@
   <% if(!blogs.length){ %><p>No blogs yet.</p><% } %>
 </div>
 
-<script>
-  function toggleMenu(){const m=document.getElementById('menu');m.style.display=m.style.display==='block'?'none':'block'}
-</script>
+<script>function toggleMenu(){const m=document.getElementById('menu');m.style.display=m.style.display==='block'?'none':'block'}</script>
 </body>
 </html>
