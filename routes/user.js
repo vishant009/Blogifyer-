@@ -1,12 +1,26 @@
-const express = require('express');
-const router = express.Router();
-const { createHmac } = require('crypto'); // ✅ ADDED
+const { Router } = require('express');
 const bcrypt = require('bcryptjs');
 const User = require('../models/user');
 const { ensureAuthenticated, ensureNotAuthenticated } = require('../middlewares/auth');
 const { sendEmail } = require('../middlewares/nodemailer');
 const { createTokenForUser } = require('../services/authentication');
 const { randomBytes } = require('crypto');
+const { requestPasswordReset } = require('../services/passwordReset');
+
+const router = Router();
+
+// Rate limiter for signup and password reset
+const signupLimiter = require('express-rate-limit')({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  message: 'Too many signup attempts, please try again later'
+});
+
+const forgotPasswordLimiter = require('express-rate-limit')({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  message: 'Too many password reset attempts, please try again later'
+});
 
 router.get('/signin', ensureNotAuthenticated, (req, res) => {
   res.render('signin', {
@@ -47,9 +61,12 @@ router.get('/signup', ensureNotAuthenticated, (req, res) => {
   });
 });
 
-router.post('/signup', ensureNotAuthenticated, async (req, res) => {
+router.post('/signup', signupLimiter, ensureNotAuthenticated, async (req, res) => {
   const { fullname, email, password } = req.body;
   try {
+    if (password.length < 8) {
+      throw new Error('Password must be at least 8 characters');
+    }
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.render('signup', {
@@ -61,13 +78,10 @@ router.post('/signup', ensureNotAuthenticated, async (req, res) => {
         csrfToken: req.csrfToken()
       });
     }
-    const salt = randomBytes(16).toString('hex');
-    const hashedPassword = createHmac('sha256', salt).update(password).digest('hex');
     const user = new User({
       fullname,
       email,
-      salt,
-      password: hashedPassword,
+      password,
       isVerified: false,
       verificationCode: randomBytes(3).toString('hex').toUpperCase(),
       verificationCodeExpires: Date.now() + 3600000
@@ -83,7 +97,7 @@ router.post('/signup', ensureNotAuthenticated, async (req, res) => {
     console.error('Sign-up error:', err);
     res.render('signup', {
       title: 'Sign Up',
-      error_msg: 'An error occurred',
+      error_msg: err.message || 'An error occurred',
       success_msg: null,
       fullname,
       email,
@@ -134,6 +148,33 @@ router.post('/verify-email', ensureNotAuthenticated, async (req, res) => {
   }
 });
 
+router.post('/resend-verification', ensureNotAuthenticated, async (req, res) => {
+  const { email } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) throw new Error('User not found');
+    if (user.isVerified) throw new Error('Email already verified');
+    user.verificationCode = randomBytes(3).toString('hex').toUpperCase();
+    user.verificationCodeExpires = Date.now() + 3600000;
+    await user.save();
+    await sendEmail({
+      to: email,
+      subject: 'Blogify Email Verification',
+      html: `<p>Your verification code is: ${user.verificationCode}</p>`
+    });
+    res.redirect(`/user/verify-email?email=${encodeURIComponent(email)}&success_msg=Verification code resent`);
+  } catch (err) {
+    console.error('Resend verification error:', err);
+    res.render('verify-email', {
+      title: 'Verify Email',
+      email,
+      error_msg: err.message || 'An error occurred',
+      success_msg: null,
+      csrfToken: req.csrfToken()
+    });
+  }
+});
+
 router.get('/forgot-password', ensureNotAuthenticated, (req, res) => {
   res.render('forgot-password', {
     title: 'Forgot Password',
@@ -146,7 +187,7 @@ router.get('/forgot-password', ensureNotAuthenticated, (req, res) => {
   });
 });
 
-router.post('/forgot-password', ensureNotAuthenticated, async (req, res) => {
+router.post('/forgot-password', forgotPasswordLimiter, ensureNotAuthenticated, async (req, res) => {
   const { email } = req.body;
   try {
     const user = await User.findOne({ email });
@@ -161,16 +202,7 @@ router.post('/forgot-password', ensureNotAuthenticated, async (req, res) => {
         csrfToken: req.csrfToken()
       });
     }
-    const resetToken = randomBytes(32).toString('hex');
-    user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = Date.now() + 3600000;
-    await user.save();
-    const resetUrl = `http://${req.headers.host}/user/reset-password/${user._id}/${resetToken}`;
-    await sendEmail({
-      to: email,
-      subject: 'Blogify Password Reset',
-      html: `<p>Click <a href="${resetUrl}">here</a> to reset your password. This link expires in 1 hour.</p>`
-    });
+    await requestPasswordReset(user, req);
     res.render('forgot-password', {
       title: 'Forgot Password',
       error: null,
@@ -216,8 +248,28 @@ router.get('/reset-password/:userId/:token', ensureNotAuthenticated, async (req,
 });
 
 router.post('/reset-password', ensureNotAuthenticated, async (req, res) => {
-  const { userId, token, password } = req.body;
+  const { userId, token, password, confirmPassword } = req.body;
   try {
+    if (password.length < 8) {
+      return res.render('reset-password', {
+        title: 'Reset Password',
+        error_msg: 'Password must be at least 8 characters',
+        success_msg: null,
+        userId,
+        token,
+        csrfToken: req.csrfToken()
+      });
+    }
+    if (password !== confirmPassword) {
+      return res.render('reset-password', {
+        title: 'Reset Password',
+        error_msg: 'Passwords do not match',
+        success_msg: null,
+        userId,
+        token,
+        csrfToken: req.csrfToken()
+      });
+    }
     const user = await User.findById(userId);
     if (!user || user.resetPasswordToken !== token || user.resetPasswordExpires < Date.now()) {
       return res.render('reset-password', {
@@ -229,9 +281,7 @@ router.post('/reset-password', ensureNotAuthenticated, async (req, res) => {
         csrfToken: req.csrfToken()
       });
     }
-    const salt = randomBytes(16).toString('hex');
-    user.salt = salt;
-    user.password = createHmac('sha256', salt).update(password).digest('hex');
+    user.password = password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
