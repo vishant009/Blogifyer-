@@ -38,7 +38,6 @@ if (process.env.NODE_ENV === 'production') {
     process.exit(1);
   }
 } else {
-  // In development, provide a default SESSION_SECRET if not set
   process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'default-session-secret-for-dev';
 }
 
@@ -71,7 +70,7 @@ app.use(session({
 const csrfProtection = csrf({ cookie: true });
 app.use(csrfProtection);
 
-// Add CSRF token to locals for all views
+// Add CSRF token and user to locals for all views
 app.use((req, res, next) => {
   res.locals.csrfToken = req.csrfToken();
   res.locals.user = req.user || null;
@@ -81,13 +80,29 @@ app.use((req, res, next) => {
 // Check authentication for all routes
 app.use(checkAuth);
 
-// Routes
-app.use('/user', userRouter);
-app.use('/blog', blogRouter);
-app.use('/profile', profileRouter);
-app.use('/settings', settingsRouter);
-app.use('/comment', commentRouter);
-app.use('/notification', notificationRouter);
+// Validate and use routers with detailed logging
+const routers = [
+  { path: '/user', router: userRouter, name: 'userRouter' },
+  { path: '/blog', router: blogRouter, name: 'blogRouter' },
+  { path: '/profile', router: profileRouter, name: 'profileRouter' },
+  { path: '/settings', router: settingsRouter, name: 'settingsRouter' },
+  { path: '/comment', router: commentRouter, name: 'commentRouter' },
+  { path: '/notification', router: notificationRouter, name: 'notificationRouter' }
+];
+
+routers.forEach(({ path, router, name }) => {
+  try {
+    if (router && typeof router === 'function') {
+      app.use(path, router);
+      console.log(`Successfully mounted ${name} at ${path}`);
+    } else {
+      console.error(`Error: ${name} is not a valid middleware function. Value: ${router}`);
+      throw new Error(`${name} is not a valid middleware function`);
+    }
+  } catch (err) {
+    console.error(`Failed to mount ${name}:`, err);
+  }
+});
 
 // Home route
 app.get('/', async (req, res) => {
