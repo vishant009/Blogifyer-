@@ -43,11 +43,12 @@
       "><i class="fas fa-check-circle"></i> <%= success_msg %></p>
     <% } %>
 
-    <form action="<%= showVerification ? '/user/verify-email/' + userId + '/' + verificationCode : '/user/signup' %>" method="POST" style="
+    <form action="<%= showVerification ? '/user/verify-email/' + verificationToken : '/user/signup' %>" method="POST" style="
       display: flex;
       flex-direction: column;
       gap: 1rem;
     ">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <% if (!showVerification) { %>
         <div style="position: relative;">
           <i class="fas fa-user" style="
@@ -93,7 +94,7 @@
             transform: translateY(-50%);
             color: #7f8c8d;
           "></i>
-          <input type="password" id="password" name="password" required aria-label="Password" placeholder="Password" style="
+          <input type="password" id="password" name="password" required aria-label="Password" placeholder="Password (min 8 chars, with uppercase, lowercase, number, special char)" style="
             padding: 0.75rem 0.75rem 0.75rem 2.5rem;
             border: 1px solid #34495e;
             border-radius: 4px;
