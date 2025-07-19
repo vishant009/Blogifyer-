@@ -81,30 +81,35 @@ app.use((req, res, next) => {
 app.use(checkAuth);
 
 // Validate and use routers with detailed logging
+console.log('Starting router validation...');
 const routers = [
-  { path: '/user', router: userRouter, name: 'userRouter' },
-  { path: '/blog', router: blogRouter, name: 'blogRouter' },
-  { path: '/profile', router: profileRouter, name: 'profileRouter' },
-  { path: '/settings', router: settingsRouter, name: 'settingsRouter' },
-  { path: '/comment', router: commentRouter, name: 'commentRouter' },
-  { path: '/notification', router: notificationRouter, name: 'notificationRouter' }
+  { path: '/user', router: userRouter, name: 'userRouter', file: './routes/user.js' },
+  { path: '/blog', router: blogRouter, name: 'blogRouter', file: './routes/blog.js' },
+  { path: '/profile', router: profileRouter, name: 'profileRouter', file: './routes/profile.js' },
+  { path: '/settings', router: settingsRouter, name: 'settingsRouter', file: './routes/settings.js' },
+  { path: '/comment', router: commentRouter, name: 'commentRouter', file: './routes/comments.js' },
+  { path: '/notification', router: notificationRouter, name: 'notificationRouter', file: './routes/notification.js' }
 ];
 
-console.log('Starting router validation...');
-routers.forEach(({ path, router, name }, index) => {
+routers.forEach(({ path, router, name, file }, index) => {
+  console.log(`Validating ${name} from ${file} (index: ${index})...`);
   try {
     if (!router) {
-      console.error(`Error: ${name} is undefined. Check import path: ./routes/${name.replace('Router', '')}.js`);
+      console.error(`Error: ${name} is undefined. Check if ${file} exists and exports a router.`);
       throw new Error(`${name} is undefined`);
     }
     if (typeof router !== 'function') {
-      console.error(`Error: ${name} is not a function. Actual value:`, router);
+      console.error(`Error: ${name} is not a function. Actual value: ${JSON.stringify(router)}`);
       throw new Error(`${name} is not a valid middleware function`);
+    }
+    if (!router.stack) {
+      console.error(`Error: ${name} is not an Express router. Ensure ${file} uses express.Router().`);
+      throw new Error(`${name} is not an Express router`);
     }
     app.use(path, router);
     console.log(`Successfully mounted ${name} at ${path} (index: ${index})`);
   } catch (err) {
-    console.error(`Failed to mount ${name} at ${path}:`, err.message);
+    console.error(`Failed to mount ${name} at ${path}: ${err.message}`);
   }
 });
 console.log('Router validation complete.');
