@@ -1,26 +1,37 @@
-<%- include('partials/head') %>
-<%- include('partials/nav') %>
-
-<div class="container" style="max-width:800px;margin:auto;padding:2rem 1rem">
-  <h1 style="margin-bottom:1rem"><%= typeof blog !== 'undefined' ? 'Edit Blog' : 'Add New Blog' %></h1>
-
-  <form action="<%= blog ? '/blog/'+blog._id+'?_method=PUT' : '/blog' %>"
-        method="post" enctype="multipart/form-data">
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Add Blog | Blogify</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    body{margin:0;background:#1a2634;color:#ecf0f1;font-family:Arial}
+    .container{max-width:600px;margin:2rem auto;padding:1rem}
+    input,textarea,select{width:100%;padding:.7rem;margin:.5rem 0;border:1px solid #34495e;border-radius:4px;background:#34495e;color:#ecf0f1}
+    button{padding:.7rem;background:#3498db;border:none;border-radius:4px;color:#fff;cursor:pointer}
+  </style>
+</head>
+<body>
+<%- include('partials/header', { user }) %>
+<div class="container">
+  <h1><i class="fas fa-plus"></i> Add Blog</h1>
+  <% if(error_msg){ %><p style="color:#e74c3c"><%= error_msg %></p><% } %>
+  <form action="/blog" method="POST" enctype="multipart/form-data">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-    <label>Title<input type="text" name="title" value="<%= blog?.title || '' %>" required style="display:block;width:100%;margin:.5rem 0 1rem;padding:.5rem;border-radius:var(--radius);border:1px solid var(--border)"></label>
-    <label>Body<textarea name="body" rows="10" required style="display:block;width:100%;margin:.5rem 0 1rem;padding:.5rem;border-radius:var(--radius);border:1px solid var(--border)"><%= blog?.body || '' %></textarea></label>
-    <label>Category
-      <select name="category" style="display:block;width:100%;margin:.5rem 0 1rem;padding:.5rem;border-radius:var(--radius);border:1px solid var(--border)">
-        <% categories.forEach(c=>{ %>
-          <option value="<%= c %>" <%= blog?.category===c ? 'selected' : '' %>><%= c %></option>
-        <% }) %>
-      </select>
-    </label>
-    <label>Tags<input type="text" name="tags" value="<%= blog?.tags.join(', ') || '' %>" placeholder="tech, life, etc" style="display:block;width:100%;margin:.5rem 0 1rem;padding:.5rem;border-radius:var(--radius);border:1px solid var(--border)"></label>
-    <label>Cover Image<input type="file" name="coverImage" accept="image/*" style="margin:.5rem 0 1rem"></label>
-    <div>
-      <button class="btn btn-primary" type="submit" name="status" value="published">Publish</button>
-      <button class="btn btn-ghost" type="submit" name="status" value="draft">Save as Draft</button>
-    </div>
+    <input type="text" name="title" placeholder="Title" required>
+    <textarea name="body" placeholder="Content" required rows="6"></textarea>
+    <select name="category">
+      <% categories.forEach(c=>{ %><option value="<%= c %>"><%= c %></option><% }) %>
+    </select>
+    <input type="text" name="tags" placeholder="Tags (comma separated)">
+    <select name="status">
+      <option value="published">Publish</option>
+      <option value="draft">Save as Draft</option>
+    </select>
+    <input type="file" name="coverImage" accept="image/*">
+    <button type="submit">Create Blog</button>
   </form>
 </div>
+</body>
+</html>
