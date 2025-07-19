@@ -1,268 +1,277 @@
-require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const path = require('path');
+const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const methodOverride = require('method-override');
-const moment = require('moment');
-const csurf = require('csurf');
-const rateLimit = require('express-rate-limit');
-const session = require('express-session');
+const path = require('path');
+const dotenv = require('dotenv');
+const userRouter = require('./routes/user');
+const blogRouter = require('./routes/blog');
+const profileRouter = require('./routes/profile');
+const settingsRouter = require('./routes/settings');
+const commentRouter = require('./routes/comments');
+const notificationRouter = require('./routes/notification');
+const csrf = require('csurf');
+const { checkAuth } = require('./middlewares/auth');
 const sanitizeHtml = require('sanitize-html');
-const { checkForAuthenticationCookie } = require('./middlewares/auth');
 
-const settingsRoute = require('./routes/settings');
-const userRoute = require('./routes/user');
-const blogRoute = require('./routes/blog');
-const commentRoute = require('./routes/comments');
-const profileRoute = require('./routes/profile');
-const notificationRoute = require('./routes/notification');
+dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 8000;
 
 // Environment variable validation
 const requiredEnvVars = [
   'MONGODB_URI',
   'JWT_SECRET',
+  'SESSION_SECRET',
   'EMAIL_USER',
   'EMAIL_PASS',
   'CLOUDINARY_CLOUD_NAME',
   'CLOUDINARY_API_KEY',
-  'CLOUDINARY_API_SECRET',
-  'SESSION_SECRET'
+  'CLOUDINARY_API_SECRET'
 ];
-requiredEnvVars.forEach((varName) => {
-  if (!process.env[varName]) {
-    console.error(`Error: Environment variable ${varName} is missing`);
+
+if (process.env.NODE_ENV === 'production') {
+  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+  if (missingVars.length > 0) {
+    console.error(`Error: Missing environment variables: ${missingVars.join(', ')}`);
     process.exit(1);
   }
-});
+} else {
+  // In development, provide a default SESSION_SECRET if not set
+  process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'default-session-secret-for-dev';
+}
 
 // MongoDB connection
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => console.log('MongoDB connected'))
-  .catch((err) => console.error('MongoDB connection error:', err));
-
-// Rate limiters
-const createBlogLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5,
-  message: 'Too many blog creation attempts, please try again later'
-});
-
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5,
-  message: 'Too many login attempts, please try again later'
-});
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('MongoDB Connected'))
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+    process.exit(1);
+  });
 
 // Middleware
-app.use(methodOverride('_method'));
-app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false
-  })
-);
-app.use(csurf({ cookie: true }));
-app.use(checkForAuthenticationCookie('token'));
+app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, 'public')));
-
-// View engine setup
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
-app.locals.moment = moment;
 
-// CSRF token middleware
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: process.env.NODE_ENV === 'production', httpOnly: true }
+}));
+
+// CSRF protection
+const csrfProtection = csrf({ cookie: true });
+app.use(csrfProtection);
+
+// Add CSRF token to locals for all views
 app.use((req, res, next) => {
-  res.locals._csrf = req.csrfToken();
+  res.locals.csrfToken = req.csrfToken();
+  res.locals.user = req.user || null;
   next();
 });
 
-// Home Route with Pagination
+// Check authentication for all routes
+app.use(checkAuth);
+
+// Routes
+app.use('/user', userRouter);
+app.use('/blog', blogRouter);
+app.use('/profile', profileRouter);
+app.use('/settings', settingsRouter);
+app.use('/comment', commentRouter);
+app.use('/notification', notificationRouter);
+
+// Home route
 app.get('/', async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = 10;
+    const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
     const Blog = require('./models/blog');
-    const Comment = require('./models/comments');
-    const totalBlogs = await Blog.countDocuments({ status: 'published' });
-    const allBlogs = await Blog.find({ status: 'published' })
-      .populate('createdBy', 'fullname email profileImageURL followers')
+    const blogs = await Blog.find({ status: 'published' })
+      .populate('createdBy', 'fullname profileImageURL')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
-
-    const blogsWithComments = await Promise.all(
-      allBlogs.map(async (blog) => {
-        const comments = await Comment.find({ blogId: blog._id, parentCommentId: null })
-          .populate('createdBy', 'fullname profileImageURL')
-          .populate('likes', 'fullname profileImageURL')
-          .sort({ createdAt: -1 });
-        const isFollowing = req.user
-          ? blog.createdBy.followers.some((follower) => follower._id.equals(req.user._id))
-          : false;
-        return { ...blog._doc, comments, isFollowing };
-      })
-    );
-
-    res.render('home', {
+    const totalBlogs = await Blog.countDocuments({ status: 'published' });
+    res.render('index', {
       user: req.user || null,
-      blogs: blogsWithComments,
-      success_msg: req.query.success_msg || null,
-      error_msg: req.query.error_msg || null,
-      csrfToken: req.csrfToken(),
+      blogs,
       currentPage: page,
-      totalPages: Math.ceil(totalBlogs / limit)
+      totalPages: Math.ceil(totalBlogs / limit),
+      error_msg: req.query.error_msg || null,
+      success_msg: req.query.success_msg || null
     });
   } catch (err) {
-    console.error('Error in home route:', err);
-    res.render('home', {
+    console.error('Error loading home page:', err);
+    res.render('error', {
       user: req.user || null,
-      blogs: [],
       error_msg: 'Failed to load blogs',
-      success_msg: null,
-      csrfToken: req.csrfToken(),
-      currentPage: 1,
-      totalPages: 1
+      csrfToken: req.csrfToken()
     });
   }
 });
 
-// Search Route
+// Search route
 app.get('/search', async (req, res) => {
   try {
-    const { q } = req.query;
-    const query = q ? q.trim() : '';
-    let users = [];
-    let blogs = [];
+    const query = req.query.q ? req.query.q.trim() : '';
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-    if (query) {
-      const User = require('./models/user');
-      const Blog = require('./models/blog');
+    const sanitizedQuery = sanitizeHtml(query, {
+      allowedTags: [],
+      allowedAttributes: {}
+    });
 
-      users = await User.find({
-        $or: [{ fullname: { $regex: query, $options: 'i' } }, { email: { $regex: query, $options: 'i' } }],
-        profileVisibility: { $in: ['public', req.user ? 'followers' : null] }
-      })
-        .populate('followers', 'fullname profileImageURL')
-        .sort({ fullname: 1 });
-
-      blogs = await Blog.find({
-        $or: [
-          { title: { $regex: query, $options: 'i' } },
-          { body: { $regex: query, $options: 'i' } },
-          { tags: { $regex: query, $options: 'i' } }
-        ],
-        status: 'published'
-      })
-        .populate('createdBy', 'fullname profileImageURL')
-        .sort({ createdAt: -1 });
+    if (!sanitizedQuery) {
+      return res.render('search', {
+        user: req.user || null,
+        query: '',
+        users: [],
+        blogs: [],
+        currentPage: 1,
+        totalPages: 1,
+        error_msg: 'Please enter a valid search query',
+        success_msg: null,
+        csrfToken: req.csrfToken()
+      });
     }
-
-    res.render('search', {
-      user: req.user || null,
-      currentUser: req.user || null,
-      users,
-      blogs,
-      query,
-      success_msg: req.query.success_msg || null,
-      error_msg: req.query.error_msg || null,
-      csrfToken: req.csrfToken()
-    });
-  } catch (err) {
-    console.error('Error in search:', err);
-    res.render('search', {
-      user: req.user || null,
-      currentUser: req.user || null,
-      users: [],
-      blogs: [],
-      query: '',
-      error_msg: 'Failed to load search results',
-      success_msg: null,
-      csrfToken: req.csrfToken()
-    });
-  }
-});
-
-// Search Autocomplete Endpoint
-app.get('/search/autocomplete', async (req, res) => {
-  try {
-    const { q } = req.query;
-    const query = q ? q.trim() : '';
-    if (!query) return res.json([]);
 
     const User = require('./models/user');
     const Blog = require('./models/blog');
 
-    const users = await User.find({
-      $or: [{ fullname: { $regex: query, $options: 'i' } }, { email: { $regex: query, $options: 'i' } }],
-      profileVisibility: { $in: ['public', req.user ? 'followers' : null] }
-    })
-      .select('fullname')
-      .limit(5);
+    const [users, blogs] = await Promise.all([
+      User.find({
+        $or: [
+          { fullname: { $regex: sanitizedQuery, $options: 'i' } },
+          { email: { $regex: sanitizedQuery, $options: 'i' } }
+        ],
+        profileVisibility: 'public'
+      }).select('fullname email profileImageURL followers').skip(skip).limit(limit),
+      Blog.find({
+        status: 'published',
+        $or: [
+          { title: { $regex: sanitizedQuery, $options: 'i' } },
+          { body: { $regex: sanitizedQuery, $options: 'i' } },
+          { tags: { $regex: sanitizedQuery, $options: 'i' } }
+        ]
+      }).populate('createdBy', 'fullname profileImageURL').sort({ createdAt: -1 }).skip(skip).limit(limit)
+    ]);
 
-    const blogs = await Blog.find({
-      $or: [{ title: { $regex: query, $options: 'i' } }, { tags: { $regex: query, $options: 'i' } }],
-      status: 'published'
-    })
-      .select('title')
-      .limit(5);
+    const [totalUsers, totalBlogs] = await Promise.all([
+      User.countDocuments({
+        $or: [
+          { fullname: { $regex: sanitizedQuery, $options: 'i' } },
+          { email: { $regex: sanitizedQuery, $options: 'i' } }
+        ],
+        profileVisibility: 'public'
+      }),
+      Blog.countDocuments({
+        status: 'published',
+        $or: [
+          { title: { $regex: sanitizedQuery, $options: 'i' } },
+          { body: { $regex: sanitizedQuery, $options: 'i' } },
+          { tags: { $regex: sanitizedQuery, $options: 'i' } }
+        ]
+      })
+    ]);
+
+    res.render('search', {
+      user: req.user || null,
+      query: sanitizedQuery,
+      users,
+      blogs,
+      currentPage: page,
+      totalPages: Math.max(Math.ceil(totalUsers / limit), Math.ceil(totalBlogs / limit)),
+      error_msg: null,
+      success_msg: null,
+      csrfToken: req.csrfToken()
+    });
+  } catch (err) {
+    console.error('Search error:', err);
+    res.render('error', {
+      user: req.user || null,
+      error_msg: 'Failed to perform search',
+      csrfToken: req.csrfToken()
+    });
+  }
+});
+
+// Autocomplete route
+app.get('/search/autocomplete', async (req, res) => {
+  try {
+    const query = req.query.q ? req.query.q.trim() : '';
+    const sanitizedQuery = sanitizeHtml(query, {
+      allowedTags: [],
+      allowedAttributes: {}
+    });
+
+    if (!sanitizedQuery) {
+      return res.json([]);
+    }
+
+    const User = require('./models/user');
+    const Blog = require('./models/blog');
+
+    const [users, blogs] = await Promise.all([
+      User.find({
+        $or: [
+          { fullname: { $regex: sanitizedQuery, $options: 'i' } },
+          { email: { $regex: sanitizedQuery, $options: 'i' } }
+        ],
+        profileVisibility: 'public'
+      }).select('fullname').limit(5),
+      Blog.find({
+        status: 'published',
+        $or: [
+          { title: { $regex: sanitizedQuery, $options: 'i' } },
+          { tags: { $regex: sanitizedQuery, $options: 'i' } }
+        ]
+      }).select('title').limit(5)
+    ]);
 
     const suggestions = [
-      ...users.map((u) => ({ type: 'user', value: u.fullname })),
-      ...blogs.map((b) => ({ type: 'blog', value: b.title }))
+      ...users.map(user => ({ type: 'user', value: user.fullname })),
+      ...blogs.map(blog => ({ type: 'blog', value: blog.title }))
     ];
 
     res.json(suggestions);
   } catch (err) {
-    console.error('Error in autocomplete:', err);
-    res.status(500).json({ error: 'Failed to fetch suggestions' });
+    console.error('Autocomplete error:', err);
+    res.status(500).json([]);
   }
 });
 
-// Routes
-app.use('/user', loginLimiter, userRoute);
-app.use('/blog', createBlogLimiter, blogRoute);
-app.use('/comment', commentRoute);
-app.use('/profile', profileRoute);
-app.use('/settings', settingsRoute);
-app.use('/notification', notificationRoute);
-
-// CSRF Error Handler
+// Error handling for CSRF errors
 app.use((err, req, res, next) => {
   if (err.code === 'EBADCSRFTOKEN') {
-    return res.status(403).render('signin', {
-      title: 'Sign In',
+    res.status(403).render('error', {
       user: req.user || null,
       error_msg: 'Invalid CSRF token',
-      success_msg: null,
-      email: '',
+      csrfToken: req.csrfToken()
+    });
+  } else {
+    console.error('Server error:', err);
+    res.status(500).render('error', {
+      user: req.user || null,
+      error_msg: 'Something went wrong',
       csrfToken: req.csrfToken()
     });
   }
-  next(err);
 });
 
-// Global Error Handler
-app.use((err, req, res, next) => {
-  console.error('Global error:', err.message);
-  res.status(500).render('error', {
-    user: req.user || null,
-    error_msg: 'An unexpected error occurred. Please try again later.',
-    success_msg: null,
-    csrfToken: req.csrfToken()
-  });
+// Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
-
-// Start Server
-app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
-
-module.exports = app;
