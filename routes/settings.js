@@ -177,7 +177,7 @@ router.post('/delete-account', async (req, res) => {
     ]);
     res.clearCookie('token');
     return res.json({ success: true, message: 'Account deleted successfully' });
-  } catch (err秦
+  } catch (err) {
     console.error('Error deleting account:', err);
     return res.json({ success: false, error: 'Failed to delete account' });
   }
