@@ -1,4 +1,3 @@
-// models/user.js
 const { Schema, model, models } = require('mongoose');
 const { createHmac, randomBytes } = require('crypto');
 const { createTokenForUser } = require('../services/authentication');
@@ -36,6 +35,7 @@ userSchema.pre('save', function (next) {
 });
 
 userSchema.statics.matchPassword = async function (email, password) {
+  const { createHmac } = require('crypto');
   const user = await this.findOne({ email });
   if (!user) throw new Error('User not found');
   if (!user.isVerified) throw new Error('Please verify your email before signing in');
@@ -45,5 +45,4 @@ userSchema.statics.matchPassword = async function (email, password) {
 };
 
 const User = models.User || model('User', userSchema);
-
 module.exports = User;
