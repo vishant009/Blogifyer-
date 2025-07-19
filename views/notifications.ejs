@@ -8,8 +8,8 @@
   <style>
     body{margin:0;background:#1a2634;color:#ecf0f1;font-family:Arial}
     .container{max-width:600px;margin:2rem auto;padding:1rem}
-    .note{background:#2c3e50;padding:1rem;border-radius:6px;margin-bottom:.8rem;display:flex;align-items:center;gap:.8rem}
-    .note img{width:40px;height:40px;border-radius:50%}
+    .note{background:#2c3e50;margin-bottom:.8rem;padding:1rem;border-radius:6px}
+    .note img{width:40px;height:40px;border-radius:50%;vertical-align:middle;margin-right:.8rem}
     .note small{color:#7f8c8d}
   </style>
 </head>
@@ -23,9 +23,9 @@
   <% if(!notifications.length){ %><p>No notifications.</p><% } %>
   <% notifications.forEach(n=>{ %>
     <div class="note">
-      <img src="<%= n.sender.profileImageURL %>">
+      <img src="<%= n.sender.profileImageURL||'/default.png' %>">
       <div>
-        <%= n.message %> <br>
+        <strong><a href="/profile/<%= n.sender._id %>" style="color:#3498db"><%= n.sender.fullname %></a></strong> <%= n.message %> <br>
         <small><%= moment(n.createdAt).fromNow() %></small>
         <% if(n.type==='FOLLOW_REQUEST'&&n.status==='PENDING'){ %>
           <form action="/notification/accept/<%= n._id %>" method="POST" style="display:inline"><button>Accept</button></form>
