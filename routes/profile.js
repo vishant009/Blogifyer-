@@ -1,6 +1,5 @@
-// routes/profile.js
 const { Router } = require('express');
-const { randomBytes } = require('crypto');
+const { randomBytes, createHmac } = require('crypto'); // ✅ ADDED
 const User = require('../models/user');
 const Blog = require('../models/blog');
 const cloudinaryUpload = require('../middlewares/cloudinaryUpload');
