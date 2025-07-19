@@ -7,28 +7,24 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <style>
     :root{--bg:#1a2634;--card:#2c3e50;--accent:#3498db;--text:#ecf0f1;--muted:#7f8c8d}
-    body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
-    header{position:sticky;top:0;z-index:1000;background:var(--card);padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--muted)}
-    header a.logo{font-size:1.4rem;font-weight:bold;color:var(--accent);text-decoration:none}
-    header form{display:flex;gap:.5rem}header input{padding:.35rem .5rem;border-radius:4px;border:1px solid var(--muted);background:#34495e;color:var(--text)}
-    header button{padding:.35rem .7rem;background:var(--accent);border:none;border-radius:4px;color:#fff;cursor:pointer}
-    .main{max-width:1000px;margin:2rem auto;padding:0 1rem;display:grid;gap:2rem}
-    .blog-card{background:var(--card);border-radius:8px;padding:1.2rem;box-shadow:0 2px 8px rgba(0,0,0,.3)}
-    .blog-card img{max-width:100%;border-radius:6px;margin-bottom:.8rem}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:Arial}
+    header{position:sticky;top:0;background:var(--card);padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--muted);z-index:1000}
+    header a.logo{color:var(--accent);font-size:1.4rem;font-weight:bold;text-decoration:none}
+    header form{display:flex;gap:.4rem}header input{padding:.35rem;border-radius:4px;border:1px solid var(--muted);background:#34495e;color:var(--text)}
+    header button{background:var(--accent);border:none;padding:.35rem .6rem;border-radius:4px;color:#fff;cursor:pointer}
+    .main{max-width:1000px;margin:2rem auto;padding:0 1rem}
+    .blog-card{background:var(--card);margin-bottom:1.2rem;border-radius:8px;padding:1.2rem;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+    .blog-card img{max-width:100%;border-radius:6px;margin-bottom:.6rem}
     .blog-card h2{margin:.3rem 0 .5rem;font-size:1.3rem}
     .blog-card h2 a{color:var(--accent);text-decoration:none}
     .blog-meta{font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:.5rem}
-    .blog-actions{margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap}
-    .btn{padding:.5rem .9rem;border:none;border-radius:4px;font-size:.85rem;cursor:pointer;transition:.2s}
-    .like-btn{background:var(--accent);color:#fff}
-    .like-btn.liked{background:#e74c3c}
-    .follow-btn{background:#27ae60;color:#fff}
-    .follow-btn.following{background:#c0392b}
-    .comments{display:none;margin-top:1rem}
-    .comments.active{display:block}
-    .comment{background:#34495e;padding:.7rem;border-radius:6px;margin-bottom:.5rem}
-    .comment img{width:30px;height:30px;border-radius:50%;vertical-align:middle;margin-right:.5rem}
-    @media(max-width:600px){.main{padding:1rem}}
+    .blog-meta img{width:24px;height:24px;border-radius:50%}
+    .actions{margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap}
+    .btn{padding:.5rem .9rem;border:none;border-radius:4px;font-size:.85rem;cursor:pointer}
+    .like-btn{background:var(--accent);color:#fff}.liked{background:#e74c3c}
+    .follow-btn{background:#27ae60;color:#fff}.following{background:#c0392b}
+    .comments{display:none;margin-top:.8rem}.comment{background:#34495e;padding:.7rem;border-radius:6px;margin-bottom:.5rem}
+    .alert{padding:.8rem;border-radius:6px;margin-bottom:1rem}.success{background:#27ae6020;color:#27ae60}.error{background:#e74c3c20;color:#e74c3c}
   </style>
 </head>
 <body>
@@ -38,63 +34,62 @@
     <input name="q" placeholder="Search…" required>
     <button><i class="fas fa-search"></i></button>
   </form>
+  <% if(user){ %>
+    <img src="<%= user.profileImageURL||'/default.png' %>" style="width:32px;height:32px;border-radius:50%;cursor:pointer" onclick="toggleMenu()">
+    <div id="menu" style="display:none;position:absolute;right:1rem;top:50px;background:#2c3e50;border:1px solid #34495e;border-radius:4px">
+      <a href="/profile" style="display:block;padding:.5rem;color:#fff;text-decoration:none">Profile</a>
+      <a href="/notification" style="display:block;padding:.5rem;color:#fff;text-decoration:none">Notifications</a>
+      <a href="/settings" style="display:block;padding:.5rem;color:#fff;text-decoration:none">Settings</a>
+      <a href="/user/logout" style="display:block;padding:.5rem;color:#fff;text-decoration:none">Logout</a>
+    </div>
+  <% }else{ %>
+    <div>
+      <a href="/user/signin" style="color:#fff;margin-right:1rem">Sign In</a>
+      <a href="/user/signup" style="color:#fff">Sign Up</a>
+    </div>
+  <% } %>
 </header>
 
 <div class="main">
-  <% if(success_msg){ %><p style="background:#27ae6020;color:#27ae60;padding:.8rem;border-radius:6px"><i class="fas fa-check-circle"></i> <%= success_msg %></p><% } %>
-  <% if(error_msg){ %><p style="background:#e74c3c20;color:#e74c3c;padding:.8rem;border-radius:6px"><i class="fas fa-exclamation-circle"></i> <%= error_msg %></p><% } %>
+  <% if(success_msg){ %><div class="alert success"><i class="fas fa-check-circle"></i> <%= success_msg %></div><% } %>
+  <% if(error_msg){ %><div class="alert error"><i class="fas fa-exclamation-circle"></i> <%= error_msg %></div><% } %>
 
   <% blogs.forEach(blog=>{ %>
     <div class="blog-card">
       <% if(blog.coverImage){ %><img src="<%= blog.coverImage %>" alt="cover"><% } %>
       <h2><a href="/blog/<%= blog._id %>"><%= blog.title %></a></h2>
       <div class="blog-meta">
-        <img src="<%= blog.createdBy.profileImageURL %>" style="width:24px;height:24px;border-radius:50%">
+        <img src="<%= blog.createdBy.profileImageURL||'/default.png' %>">
         <a href="/profile/<%= blog.createdBy._id %>"><%= blog.createdBy.fullname %></a>
         <span><%= moment(blog.createdAt).fromNow() %></span>
       </div>
       <p><%= blog.body.slice(0,150) %>…</p>
 
-      <div class="blog-actions">
+      <div class="actions">
         <% if(user){ %>
           <form action="/blog/<%= blog._id %>/like" method="POST" style="display:inline">
-            <button class="btn like-btn <%= blog.likes.includes(user._id)?'liked':'' %>">
-              <i class="fas <%= blog.likes.includes(user._id)?'fa-heart':'fa-heart-broken' %>"></i>
-              <%= blog.likes.length %>
+            <button class="btn <%= blog.likes.includes(user._id)?'liked':'like-btn' %>">
+              <i class="fas <%= blog.likes.includes(user._id)?'fa-heart':'fa-heart-broken' %>"></i> <%= blog.likes.length %>
             </button>
           </form>
 
           <% if(user._id.toString()!==blog.createdBy._id.toString()){ %>
             <form action="<%= blog.isFollowing?`/user/unfollow/${blog.createdBy._id}`:`/user/follow/${blog.createdBy._id}` %>" method="POST" style="display:inline">
-              <button class="btn follow-btn <%= blog.isFollowing?'following':'' %>">
-                <i class="fas <%= blog.isFollowing?'fa-user-minus':'fa-user-plus' %>"></i>
-                <%= blog.isFollowing?'Unfollow':'Follow' %>
+              <button class="btn <%= blog.isFollowing?'following':'follow-btn' %>">
+                <i class="fas <%= blog.isFollowing?'fa-user-minus':'fa-user-plus' %>"></i> <%= blog.isFollowing?'Unfollow':'Follow' %>
               </button>
             </form>
           <% } %>
         <% } %>
-        <a href="/blog/<%= blog._id %>" class="btn like-btn">View</a>
-      </div>
-
-      <div class="comments">
-        <% blog.comments.forEach(c=>{ %>
-          <div class="comment">
-            <img src="<%= c.createdBy.profileImageURL %>">
-            <strong><%= c.createdBy.fullname %></strong>: <%= c.content %>
-            <br><small><%= moment(c.createdAt).fromNow() %></small>
-          </div>
-        <% }) %>
+        <a href="/blog/<%= blog._id %>" class="btn like-btn">View Post</a>
       </div>
     </div>
   <% }) %>
-
   <% if(!blogs.length){ %><p>No blogs yet.</p><% } %>
 </div>
 
 <script>
-  document.addEventListener('click',e=>{
-    if(e.target.classList.contains('like-btn')||e.target.classList.contains('follow-btn')) return;
-  });
+  function toggleMenu(){const m=document.getElementById('menu');m.style.display=m.style.display==='block'?'none':'block'}
 </script>
 </body>
 </html>
