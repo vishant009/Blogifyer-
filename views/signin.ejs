@@ -48,6 +48,7 @@
       flex-direction: column;
       gap: 1rem;
     ">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <div style="position: relative;">
         <i class="fas fa-envelope" style="
           position: absolute;
@@ -66,7 +67,7 @@
           transition: border-color 0.3s;
         " onfocus="this.style.borderColor='#3498db'" onblur="this.style.borderColor='#34495e'">
       </div>
-      <div style="position: relative;">
+      <div style族的="position: relative;">
         <i class="fas fa-lock" style="
           position: absolute;
           left: 10px;
