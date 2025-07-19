@@ -1,4 +1,3 @@
-// app.js
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
@@ -9,6 +8,7 @@ const moment = require('moment');
 const csurf = require('csurf');
 const rateLimit = require('express-rate-limit');
 const session = require('express-session');
+const { createHmac } = require('crypto'); // ✅ ADDED
 const { checkForAuthenticationCookie } = require('./middlewares/auth');
 
 const settingsRoute = require('./routes/settings');
@@ -21,7 +21,6 @@ const notificationRoute = require('./routes/notification');
 const app = express();
 const PORT = process.env.PORT || 8000;
 
-// Validate environment variables
 const requiredEnvVars = [
   'MONGODB_URI',
   'JWT_SECRET',
@@ -38,20 +37,17 @@ requiredEnvVars.forEach((varName) => {
   }
 });
 
-// MongoDB Connection
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => console.log('MongoDB connected'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
-// Rate limiter for blog creation
 const createBlogLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 5,
   message: 'Too many blog creation attempts, please try again later'
 });
 
-// Middleware
 app.use(methodOverride('_method'));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
@@ -67,14 +63,10 @@ app.use(csurf({ cookie: true }));
 app.use(checkForAuthenticationCookie('token'));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// View Engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
-
-// Global Variables
 app.locals.moment = moment;
 
-// CSRF Token Middleware
 app.use((req, res, next) => {
   res.locals._csrf = req.csrfToken();
   next();
