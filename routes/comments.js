@@ -1,4 +1,3 @@
-// routes/comments.js
 const { Router } = require('express');
 const Comment = require('../models/comments');
 
