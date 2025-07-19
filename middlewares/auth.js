@@ -1,43 +1,32 @@
-// middlewares/auth.js
 const jwt = require('jsonwebtoken');
-const User = require('../models/user');
 
-const checkForAuthenticationCookie = (cookieName) => {
-  return async (req, res, next) => {
+function checkForAuthenticationCookie(cookieName) {
+  return (req, res, next) => {
     const token = req.cookies[cookieName];
-    if (!token) {
-      req.user = null;
-      return next();
-    }
+    if (!token) return next();
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await User.findById(decoded.userId).select('fullname email role profileImageURL followers following');
+      const user = jwt.verify(token, process.env.JWT_SECRET);
       req.user = user;
       next();
     } catch (err) {
-      console.error('JWT verification error:', err);
-      req.user = null;
+      console.error('Token verification failed:', err);
       next();
     }
   };
-};
+}
 
-const ensureAuthenticated = (req, res, next) => {
+function ensureAuthenticated(req, res, next) {
   if (!req.user) {
-    return res.redirect('/user/signin?error_msg=Please log in to access this page');
+    return res.redirect('/user/signin?error_msg=Please log in');
   }
   next();
-};
+}
 
-const ensureNotAuthenticated = (req, res, next) => {
+function ensureNotAuthenticated(req, res, next) {
   if (req.user) {
     return res.redirect('/?error_msg=You are already logged in');
   }
   next();
-};
+}
 
-module.exports = {
-  checkForAuthenticationCookie,
-  ensureAuthenticated,
-  ensureNotAuthenticated
-};
+module.exports = { checkForAuthenticationCookie, ensureAuthenticated, ensureNotAuthenticated };
