@@ -1,125 +1,43 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Search | Blogify</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-</head>
-<body style="background-color: #1a2634; color: #ecf0f1; margin: 0; font-family: 'Arial', sans-serif;">
-  <%- include('partials/header', { user }) %>
-  <div style="
-    max-width: 800px;
-    margin: 2rem auto;
-    padding: 2rem;
-    background-color: #2c3e50;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  ">
-    <h1 style="
-      font-size: 1.8rem;
-      color: #ecf0f1;
-      margin-bottom: 1rem;
-    ">Search Results for "<%= query %>"</h1>
-
-    <% if (success_msg) { %>
-      <p style="
-        padding: 1rem;
-        margin-bottom: 1rem;
-        background-color: #d4edda;
-        color: #155724;
-        border-radius: 4px;
-      "><i class="fas fa-check-circle"></i> <%= success_msg %></p>
-    <% } %>
-    <% if (error_msg) { %>
-      <p style="
-        padding: 1rem;
-        margin-bottom: 1rem;
-        background-color: #f8d7da;
-        color: #721c24;
-        border-radius: 4px;
-      "><i class="fas fa-exclamation-circle"></i> <%= error_msg %></p>
-    <% } %>
-
-    <div style="margin-bottom: 2rem;">
-      <h2 style="color: #ecf0f1; margin-bottom: 1rem;"><i class="fas fa-users"></i> Users</h2>
-      <% if (users && users.length > 0) { %>
-        <% users.forEach(user => { %>
-          <div style="
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            background-color: #34495e;
-            border-radius: 4px;
-            margin-bottom: 0.5rem;
-            transition: transform 0.3s;
-          " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-            <a href="/profile/<%= user._id %>">
-              <img src="<%= user.profileImageURL || '/default-profile.png' %>" alt="<%= user.fullname %>'s Profile Image" style="
-                width: 40px;
-                height: 40px;
-                border-radius: 50%;
-                object-fit: cover;
-              ">
-            </a>
-            <div style="flex: 1;">
-              <p style="margin: 0; color: #ecf0f1;">
-                <a href="/profile/<%= user._id %>" style="
-                  color: #3498db;
-                  text-decoration: none;
-                " onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'"><%= user.fullname %></a>
-              </p>
-              <p style="margin: 0; font-size: 0.9rem; color: #7f8c8d;"><%= user.email %></p>
-            </div>
-          </div>
-        <% }) %>
-      <% } else { %>
-        <p style="color: #7f8c8d;">No users found.</p>
-      <% } %>
-    </div>
-
-    <div>
-      <h2 style="color: #ecf0f1; margin-bottom: 1rem;"><i class="fas fa-blog"></i> Blogs</h2>
-      <% if (blogs && blogs.length > 0) { %>
-        <% blogs.forEach(blog => { %>
-          <div style="
-            padding: 1rem;
-            background-color: #34495e;
-            border-radius: 4px;
-            margin-bottom: 0.5rem;
-            transition: transform 0.3s;
-          " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-            <h3 style="font-size: 1.2rem; color: #ecf0f1; margin-bottom: 0.5rem;">
-              <a href="/blog/<%= blog._id %>" style="
-                color: #3498db;
-                text-decoration: none;
-              " onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'"><%= blog.title %></a>
-            </h3>
-            <p style="color: #ecf0f1; margin-bottom: 0.5rem;">
-              <%= blog.body && blog.body.length > 100 ? blog.body.substring(0, 100) + '...' : blog.body %>
-            </p>
-            <p style="font-size: 0.9rem; color: #7f8c8d;">
-              Posted by <a href="/profile/<%= blog.createdBy._id %>" style="
-                color: #3498db;
-                text-decoration: none;
-              " onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'"><%= blog.createdBy.fullname %></a>
-              <i class="fas fa-clock"></i> <%= moment(blog.createdAt).fromNow() %>
-            </p>
-          </div>
-        <% }) %>
-      <% } else { %>
-        <p style="color: #7f8c8d;">No blogs found.</p>
-      <% } %>
-    </div>
-  </div>
   <style>
-    @media (max-width: 768px) {
-      div[style*='max-width: 800px'] { margin: 1rem; padding: 1rem; }
-      h1 { font-size: 1.5rem; }
-      h2 { font-size: 1.2rem; }
-      div[style*='display: flex; align-items: center'] { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
-    }
+    body{margin:0;background:#1a2634;color:#ecf0f1;font-family:Arial}
+    .container{max-width:800px;margin:2rem auto;padding:1rem}
+    .result{background:#2c3e50;margin-bottom:.8rem;padding:1rem;border-radius:8px;display:flex;align-items:center;gap:1rem}
+    .result img{width:40px;height:40px;border-radius:50%;object-fit:cover}
+    .result a{color:#3498db;text-decoration:none}
   </style>
+</head>
+<body>
+<%- include('partials/header', { user }) %>
+<div class="container">
+  <h1>Search Results for "<%= query %>"</h1>
+  <% if(success_msg){ %><p style="color:#27ae60"><%= success_msg %></p><% } %>
+  <% if(error_msg){ %><p style="color:#e74c3c"><%= error_msg %></p><% } %>
+
+  <h2>Users</h2>
+  <% if(users.length){ %>
+    <% users.forEach(u=>{ %>
+      <div class="result">
+        <img src="<%= u.profileImageURL %>">
+        <a href="/profile/<%= u._id %>"><%= u.fullname %></a>
+      </div>
+    <% }) %>
+  <% }else{ %><p>No users.</p><% } %>
+
+  <h2>Blogs</h2>
+  <% if(blogs.length){ %>
+    <% blogs.forEach(b=>{ %>
+      <div class="result">
+        <a href="/blog/<%= b._id %>"><%= b.title %></a> – <small><%= moment(b.createdAt).fromNow() %></small>
+      </div>
+    <% }) %>
+  <% }else{ %><p>No blogs.</p><% } %>
+</div>
 </body>
 </html>
