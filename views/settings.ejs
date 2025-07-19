@@ -1,65 +1,85 @@
-<%- include('partials/head') %>
-<%- include('partials/nav') %>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Settings | Blogify</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    body{margin:0;background:#1a2634;color:#ecf0f1;font-family:Arial}
+    .container{max-width:700px;margin:2rem auto;padding:1rem}
+    .section{background:#2c3e50;margin-bottom:1rem;padding:1rem;border-radius:8px}
+    h2{margin-top:0}
+    label{display:block;margin:.5rem 0}
+    input,textarea,select{width:100%;padding:.5rem;border:1px solid #34495e;border-radius:4px;background:#34495e;color:#ecf0f1}
+    button{padding:.5rem 1rem;border:none;border-radius:4px;background:#3498db;color:#fff;cursor:pointer;margin-top:.5rem}
+    .danger{background:#e74c3c}
+    .popup{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#2c3e50;padding:1.5rem;border-radius:8px;z-index:1000;max-width:90%}
+    .overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6)}
+    .close{float:right;font-size:1.2rem;cursor:pointer}
+  </style>
+</head>
+<body>
+<%- include('partials/header', { user }) %>
+<div class="container">
+  <% if(success_msg){ %><div style="color:#27ae60"><%= success_msg %></div><% } %>
+  <% if(error_msg){ %><div style="color:#e74c3c"><%= error_msg %></div><% } %>
 
-<div class="container" style="max-width:800px;margin:auto;padding:2rem 1rem;display:flex;gap:2rem">
-  <aside style="min-width:180px">
-    <h3>Settings</h3>
-    <nav style="display:flex;flex-direction:column;gap:.5rem;margin-top:1rem">
-      <a href="#profile" onclick="showTab('profile')">Profile</a>
-      <a href="#password" onclick="showTab('password')">Password</a>
-      <a href="#danger" onclick="showTab('danger')">Delete Account</a>
-    </nav>
-  </aside>
-
-  <main style="flex:1">
-    <form id="profile" class="tab card" action="/settings/update-profile" method="post" enctype="multipart/form-data">
-      <h2>Profile</h2>
-      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-      <label>Full Name<input type="text" name="fullname" value="<%= user.fullname %>" style="display:block;width:100%;margin:.5rem 0 1rem;padding:.5rem;border-radius:var(--radius);border:1px solid var(--border)"></label>
-      <label>Bio<textarea name="bio" rows="3" style="display:block;width:100%;margin:.5rem 0 1rem;padding:.5rem;border-radius:var(--radius);border:1px solid var(--border)"><%= user.bio %></textarea></label>
-      <label>Visibility
-        <select name="visibility" style="display:block;width:100%;margin:.5rem 0 1rem;padding:.5rem;border-radius:var(--radius);border:1px solid var(--border)">
-          <option value="public" <%= visibility==='public' ? 'selected' : '' %>>Public</option>
-          <option value="followers" <%= visibility==='followers' ? 'selected' : '' %>>Followers only</option>
-          <option value="private" <%= visibility==='private' ? 'selected' : '' %>>Private</option>
-        </select>
-      </label>
-      <label>Profile Image<input type="file" name="profileImage" accept="image/*" style="margin:.5rem 0 1rem"></label>
-      <button class="btn btn-primary">Save</button>
+  <div class="section">
+    <h2>Update Profile</h2>
+    <form action="/settings/update-profile" method="POST" enctype="multipart/form-data">
+      <label>Username</label>
+      <input type="text" name="fullname" value="<%= user.fullname %>">
+      <label>Bio</label>
+      <textarea name="bio"><%= user.bio||'' %></textarea>
+      <label>Profile Image</label>
+      <input type="file" name="profileImage" accept="image/*">
+      <label>Visibility</label>
+      <select name="visibility">
+        <option value="public" <%= user.profileVisibility==='public'?'selected':'' %>>Public</option>
+        <option value="followers" <%= user.profileVisibility==='followers'?'selected':'' %>>Followers</option>
+        <option value="private" <%= user.profileVisibility==='private'?'selected':'' %>>Private</option>
+      </select>
+      <button type="submit">Save</button>
     </form>
+  </div>
 
-    <form id="password" class="tab card hidden" action="/settings/reset-password" method="post">
-      <h2>Change Password</h2>
-      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-      <input type="hidden" name="userId" value="<%= user._id %>">
-      <input type="hidden" name="token" value="">
-      <label>New Password<input type="password" name="password" minlength="8" required style="display:block;width:100%;margin:.5rem 0 1rem;padding:.5rem;border-radius:var(--radius);border:1px solid var(--border)"></label>
-      <label>Confirm<input type="password" name="confirmPassword" required style="display:block;width:100%;margin:.5rem 0 1rem;padding:.5rem;border-radius:var(--radius);border:1px solid var(--border)"></label>
-      <button class="btn btn-primary">Update</button>
-    </form>
+  <div class="section">
+    <h2>Security</h2>
+    <button onclick="openPopup('passPopup')">Request Password Reset</button>
+  </div>
 
-    <form id="danger" class="tab card hidden" onsubmit="return confirmDelete()">
-      <h2 style="color:#ef4444">Delete Account</h2>
-      <p>This action cannot be undone.</p>
-      <input type="password" id="deletePw" placeholder="Enter password to confirm" required style="display:block;width:100%;margin:.5rem 0 1rem;padding:.5rem;border-radius:var(--radius);border:1px solid var(--border)">
-      <button class="btn" style="background:#ef4444;color:#fff">Delete Forever</button>
-    </form>
-  </main>
+  <div class="section">
+    <h2>Danger Zone</h2>
+    <button class="danger" onclick="openPopup('delPopup')">Delete Account</button>
+  </div>
+</div>
+
+<!-- popups -->
+<div class="overlay" id="overlay"></div>
+<div class="popup" id="passPopup">
+  <span class="close" onclick="closePopup('passPopup')">&times;</span>
+  <h3>Reset Password</h3>
+  <p>We’ll email you a reset link.</p>
+  <button onclick="requestReset()">Send Link</button>
+</div>
+<div class="popup" id="delPopup">
+  <span class="close" onclick="closePopup('delPopup')">&times;</span>
+  <h3>Delete Account</h3>
+  <p>Enter your password to confirm.</p>
+  <input type="password" id="delPass" placeholder="Password">
+  <button class="danger" onclick="deleteAccount()">Delete</button>
 </div>
 
 <script>
-function showTab(id){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.add('hidden'));
-  document.getElementById(id).classList.remove('hidden');
-}
-function confirmDelete(){
-  if(document.getElementById('deletePw').value){
-    fetch('/settings/delete-account',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:document.getElementById('deletePw').value})})
-    .then(r=>r.json()).then(d=>{
-      if(d.success){location.href='/';}
-      else toast(d.error,'error');
-    });
+  const openPopup=id=>{document.getElementById(id).style.display='block';document.getElementById('overlay').style.display='block'}
+  const closePopup=id=>{document.getElementById(id).style.display='none';document.getElementById('overlay').style.display='none'}
+  const requestReset=()=>fetch('/settings/request-password-reset',{method:'POST',headers:{'Content-Type':'application/json'}}).then(r=>r.json()).then(d=>alert(d.message||d.error))
+  const deleteAccount=()=>{
+    const p=document.getElementById('delPass').value
+    fetch('/settings/delete-account',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:p})})
+    .then(r=>r.json()).then(d=>{if(d.success){location.href='/?success_msg=Account+deleted'}else alert(d.error)})
   }
-  return false;
-}
 </script>
+</body>
+</html>
