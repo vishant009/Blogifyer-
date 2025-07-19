@@ -1,12 +1,11 @@
 const { Schema, model, models } = require('mongoose');
-const { createHmac, randomBytes } = require('crypto');
+const bcrypt = require('bcryptjs');
 const { createTokenForUser } = require('../services/authentication');
 
 const userSchema = new Schema(
   {
     fullname: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    salt: { type: String },
     password: { type: String, required: true },
     profileImageURL: { type: String, default: '/images/default.png' },
     role: { type: String, enum: ['USER', 'ADMIN'], default: 'USER' },
@@ -26,21 +25,18 @@ const userSchema = new Schema(
   { timestamps: true }
 );
 
-userSchema.pre('save', function (next) {
+userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
-  const salt = randomBytes(16).toString('hex');
-  this.salt = salt;
-  this.password = createHmac('sha256', salt).update(this.password).digest('hex');
+  this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
 userSchema.statics.matchPassword = async function (email, password) {
-  const { createHmac } = require('crypto');
   const user = await this.findOne({ email });
   if (!user) throw new Error('User not found');
   if (!user.isVerified) throw new Error('Please verify your email before signing in');
-  const hashedPassword = createHmac('sha256', user.salt).update(password).digest('hex');
-  if (hashedPassword !== user.password) throw new Error('Incorrect password');
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) throw new Error('Incorrect password');
   return createTokenForUser(user);
 };
 
