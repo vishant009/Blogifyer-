@@ -1,22 +1,22 @@
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
+// middlewares/cloudinaryUpload.js
 const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('cloudinary').v2;
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-const imageStorage = new CloudinaryStorage({
-  cloudinary: cloudinary,
+const storage = new CloudinaryStorage({
+  cloudinary,
   params: {
-    folder: 'blogifyer_uploads',
-    allowed_formats: ['jpg', 'png', 'jpeg', 'gif'],
-    public_id: (req, file) => Date.now() + '-' + file.originalname,
-  },
+    folder: 'blogify',
+    allowed_formats: ['jpg', 'png', 'jpeg']
+  }
 });
 
-const cloudinaryUpload = multer({ storage: imageStorage });
+const upload = multer({ storage });
 
-module.exports = cloudinaryUpload;
+module.exports = upload;
