@@ -1,5 +1,5 @@
-// routes/blog.js
 const { Router } = require('express');
+const { createHmac } = require('crypto'); // ✅ ADDED
 const Blog = require('../models/blog');
 const Comment = require('../models/comments');
 const User = require('../models/user');
