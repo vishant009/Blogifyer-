@@ -90,19 +90,24 @@ const routers = [
   { path: '/notification', router: notificationRouter, name: 'notificationRouter' }
 ];
 
-routers.forEach(({ path, router, name }) => {
+console.log('Starting router validation...');
+routers.forEach(({ path, router, name }, index) => {
   try {
-    if (router && typeof router === 'function') {
-      app.use(path, router);
-      console.log(`Successfully mounted ${name} at ${path}`);
-    } else {
-      console.error(`Error: ${name} is not a valid middleware function. Value: ${router}`);
+    if (!router) {
+      console.error(`Error: ${name} is undefined. Check import path: ./routes/${name.replace('Router', '')}.js`);
+      throw new Error(`${name} is undefined`);
+    }
+    if (typeof router !== 'function') {
+      console.error(`Error: ${name} is not a function. Actual value:`, router);
       throw new Error(`${name} is not a valid middleware function`);
     }
+    app.use(path, router);
+    console.log(`Successfully mounted ${name} at ${path} (index: ${index})`);
   } catch (err) {
-    console.error(`Failed to mount ${name}:`, err);
+    console.error(`Failed to mount ${name} at ${path}:`, err.message);
   }
 });
+console.log('Router validation complete.');
 
 // Home route
 app.get('/', async (req, res) => {
