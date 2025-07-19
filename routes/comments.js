@@ -1,4 +1,5 @@
 const { Router } = require('express');
+const sanitizeHtml = require('sanitize-html');
 const Comment = require('../models/comments');
 
 const router = Router();
@@ -12,8 +13,12 @@ router.post('/:blogId', async (req, res) => {
     if (!content?.trim()) {
       return res.redirect(`/blog/${req.params.blogId}?error_msg=Comment content is required`);
     }
+    const sanitizedContent = sanitizeHtml(content, {
+      allowedTags: ['b', 'i', 'em', 'strong', 'a'],
+      allowedAttributes: { 'a': ['href'] }
+    });
     await Comment.create({
-      content,
+      content: sanitizedContent,
       blogId: req.params.blogId,
       createdBy: req.user._id,
       parentCommentId: parentCommentId || null,
@@ -34,6 +39,9 @@ router.delete('/:commentId', async (req, res) => {
     }
     if (!req.user || comment.createdBy.toString() !== req.user._id.toString()) {
       return res.redirect(`/blog/${comment.blogId}?error_msg=Unauthorized to delete this comment`);
+    }
+    if (comment.parentCommentId) {
+      await Comment.findByIdAndUpdate(comment.parentCommentId, { $pull: { replies: comment._id } });
     }
     await Comment.deleteMany({ $or: [{ _id: req.params.commentId }, { parentCommentId: req.params.commentId }] });
     return res.redirect(`/blog/${comment.blogId}?success_msg=Comment deleted successfully`);
