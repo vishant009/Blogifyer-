@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title><%= typeof title !== 'undefined' ? title : 'Blogify' %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#ffffff;--bg-soft:#f7f8fa;--text:#111827;--text-soft:#6b7280;
+      --primary:#3b82f6;--accent:#ec4899;--border:#e5e7eb;--radius:.5rem;
+      --shadow:0 10px 15px -3px rgba(0,0,0,.04);--transition:.2s ease;
+    }
+    [data-theme="dark"]{
+      --bg:#0f172a;--bg-soft:#1e293b;--text:#f1f5f9;--text-soft:#94a3b8;
+      --border:#334155;--shadow:0 10px 15px -3px rgba(0,0,0,.4);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+    img{max-width:100%;display:block}
+    a{color:var(--primary);text-decoration:none}
+    .container{max-width:1280px;margin:auto;padding:0 1rem}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:.6rem 1.2rem;border-radius:var(--radius);font-weight:600;cursor:pointer;border:none;transition:var(--transition)}
+    .btn-primary{background:var(--primary);color:#fff}
+    .btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+    .btn-icon{padding:.4rem;border-radius:50%}
+    .card{background:var(--bg-soft);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.2rem}
+    .skeleton{background:linear-gradient(90deg,var(--border) 25%,var(--bg) 50%,var(--border) 75%);background-size:200% 100%;animation:skeleton 1.5s infinite;border-radius:var(--radius)}
+    @keyframes skeleton{to{background-position:-200% 0}}
+    .toast{position:fixed;top:1rem;right:1rem;background:var(--bg-soft);border:1px solid var(--border);padding:.8rem 1rem;border-radius:var(--radius);z-index:9999;animation:slideIn .3s forwards}
+    @keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+    .hidden{display:none}
+    .avatar{width:2.5rem;height:2.5rem;border-radius:50%;object-fit:cover}
+    .grid{display:grid;gap:1.5rem}
+    .grid-3{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+    .flex{display:flex;align-items:center;gap:.5rem}
+    .flex-between{display:flex;align-items:center;justify-content:space-between}
+    .prose{max-width:65ch}
+    .icon{width:1.2rem;height:1.2rem}
+    header.sticky{position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--border)}
+    .drawer{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;opacity:0;pointer-events:none;transition:var(--transition)}
+    .drawer.open{opacity:1;pointer-events:auto}
+    .drawer-content{position:absolute;top:0;left:0;height:100%;width:260px;background:var(--bg);padding:1rem}
+    .ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.6);transform:scale(0);animation:ripple .6s linear;pointer-events:none}
+    @keyframes ripple{to{transform:scale(4);opacity:0}}
+  </style>
+</head>
