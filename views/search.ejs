@@ -24,7 +24,7 @@
   <% if(users.length){ %>
     <% users.forEach(u=>{ %>
       <div class="result">
-        <img src="<%= u.profileImageURL %>">
+        <img src="<%= u.profileImageURL||'/default.png' %>">
         <a href="/profile/<%= u._id %>"><%= u.fullname %></a>
       </div>
     <% }) %>
