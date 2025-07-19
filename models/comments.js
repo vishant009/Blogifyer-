@@ -1,4 +1,3 @@
-// models/comments.js
 const { Schema, model } = require('mongoose');
 
 const commentSchema = new Schema(
