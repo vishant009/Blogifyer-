@@ -1,0 +1,11 @@
+<div id="toast" class="toast hidden"></div>
+<script>
+function toast(msg,type='success'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.style.background=type==='error'?'#ef4444':'#22c55e';
+  t.style.color='#fff';
+  t.classList.remove('hidden');
+  setTimeout(()=>t.classList.add('hidden'),4000);
+}
+</script>
