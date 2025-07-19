@@ -39,7 +39,7 @@
     <button><i class="fas fa-search"></i></button>
   </form>
 </header>
-
+<%- include('partials/header' %>
 <div class="main">
   <% if(success_msg){ %><p style="background:#27ae6020;color:#27ae60;padding:.8rem;border-radius:6px"><i class="fas fa-check-circle"></i> <%= success_msg %></p><% } %>
   <% if(error_msg){ %><p style="background:#e74c3c20;color:#e74c3c;padding:.8rem;border-radius:6px"><i class="fas fa-exclamation-circle"></i> <%= error_msg %></p><% } %>
