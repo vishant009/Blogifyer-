@@ -1,69 +1,36 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title><%= profileUser.fullname %> | Blogify</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-  <style>
-    body{margin:0;background:#1a2634;color:#ecf0f1;font-family:Arial}
-    .container{max-width:800px;margin:2rem auto;padding:1rem}
-    .profile{display:flex;gap:1rem;align-items:center;margin-bottom:1rem}
-    .profile img{width:80px;height:80px;border-radius:50%;object-fit:cover}
-    .blogs .blog-card{background:#2c3e50;padding:1rem;border-radius:6px;margin-bottom:.8rem}
-    .popup{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#2c3e50;padding:1rem;border-radius:6px;z-index:1000}
-    .overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5)}
-  </style>
-</head>
-<body>
-<%- include('partials/header', { user }) %>
-<div class="container">
-  <% if(success_msg){ %><p style="color:#27ae60"><%= success_msg %></p><% } %>
-  <% if(error_msg){ %><p style="color:#e74c3c"><%= error_msg %></p><% } %>
+<%- include('partials/head') %>
+<%- include('partials/nav') %>
 
-  <div class="profile">
-    <img src="<%= profileUser.profileImageURL %>">
-    <div>
-      <h2><%= profileUser.fullname %></h2>
-      <p><%= profileUser.bio||'No bio' %></p>
-      <p><span onclick="openPopup('followers')" style="cursor:pointer;color:#3498db">Followers: <%= profileUser.followers.length %></span> | 
-         <span onclick="openPopup('following')" style="cursor:pointer;color:#3498db">Following: <%= profileUser.following.length %></span></p>
-      <% if(user && user._id.toString()!==profileUser._id.toString()){ %>
-        <form action="<%= isFollowing?`/user/unfollow/${profileUser._id}`:`/user/follow/${profileUser._id}` %>" method="POST">
-          <button style="padding:.5rem 1rem;border:none;border-radius:4px;background:<%= isFollowing?'#e74c3c':'#27ae60' %>;color:#fff"><%= isFollowing?'Unfollow':'Follow' %></button>
-        </form>
-      <% } %>
+<div style="background:url('<%= profileUser.profileImageURL %>') center/cover;height:200px"></div>
+<div class="container" style="max-width:800px;margin:auto;padding:2rem 1rem">
+  <div class="card" style="margin-top:-4rem;position:relative">
+    <img src="<%= profileUser.profileImageURL %>" class="avatar" style="width:6rem;height:6rem;border:4px solid var(--bg)">
+    <h1 style="margin:.5rem 0"><%= profileUser.fullname %></h1>
+    <p style="color:var(--text-soft)"><%= profileUser.bio %></p>
+    <div class="flex" style="margin-top:1rem">
+      <span><%= profileUser.followers.length %> Followers</span>
+      <span><%= profileUser.following.length %> Following</span>
     </div>
+    <% if(user && user._id.toString() !== profileUser._id.toString()){ %>
+      <form action="/user/<%= isFollowing ? 'unfollow' : 'follow' %>/<%= profileUser._id %>" method="post" style="margin-top:1rem">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn <%= isFollowing ? 'btn-ghost' : 'btn-primary' %>">
+          <%= isFollowing ? 'Unfollow' : 'Follow' %>
+        </button>
+      </form>
+    <% } %>
   </div>
 
-  <h3>Blogs</h3>
-  <div class="blogs">
+  <h2 style="margin:2rem 0 1rem">Blogs</h2>
+  <div class="grid grid-3">
     <% blogs.forEach(b=>{ %>
-      <div class="blog-card">
-        <h4><a href="/blog/<%= b._id %>"><%= b.title %></a></h4>
-        <small><%= moment(b.createdAt).fromNow() %></small>
-      </div>
+      <article class="card">
+        <a href="/blog/<%= b._id %>">
+          <img src="<%= b.coverImage || '/images/default-cover.jpg' %>" style="border-radius:var(--radius);margin-bottom:.5rem">
+        </a>
+        <h3 style="font-size:1.125rem"><a href="/blog/<%= b._id %>"><%= b.title %></a></h3>
+      </article>
     <% }) %>
-    <% if(!blogs.length){ %><p>No blogs.</p><% } %>
+    <% if(blogs.length===0){ %><p style="color:var(--text-soft)">No blogs yet.</p><% } %>
   </div>
 </div>
-
-<!-- followers/following popups -->
-<div class="overlay" id="overlay"></div>
-<div class="popup" id="followers"><span onclick="closePopup('followers')" style="float:right">&times;</span><h3>Followers</h3>
-  <% if(profileUser.followers.length){ %>
-    <% profileUser.followers.forEach(f=>{ %><p><a href="/profile/<%= f._id %>"><%= f.fullname %></a></p><% }) %>
-  <% }else{ %>None<% } %>
-</div>
-<div class="popup" id="following"><span onclick="closePopup('following')" style="float:right">&times;</span><h3>Following</h3>
-  <% if(profileUser.following.length){ %>
-    <% profileUser.following.forEach(f=>{ %><p><a href="/profile/<%= f._id %>"><%= f.fullname %></a></p><% }) %>
-  <% }else{ %>None<% } %>
-</div>
-
-<script>
-  const openPopup=id=>{document.getElementById(id).style.display='block';document.getElementById('overlay').style.display='block'}
-  const closePopup=id=>{document.getElementById(id).style.display='none';document.getElementById('overlay').style.display='none'}
-</script>
-</body>
-</html>
