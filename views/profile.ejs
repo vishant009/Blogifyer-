@@ -38,27 +38,15 @@
 
   <h3>Blogs</h3>
   <div class="blogs">
-    <% blogs.forEach(b=>{ %>
-      <div class="blog-card">
-        <h4><a href="/blog/<%= b._id %>"><%= b.title %></a></h4>
-        <small><%= moment(b.createdAt).fromNow() %></small>
-      </div>
-    <% }) %>
+    <% blogs.forEach(b=>{ %><div class="blog-card"><h4><a href="/blog/<%= b._id %>"><%= b.title %></a></h4><small><%= moment(b.createdAt).fromNow() %></small></div><% }) %>
     <% if(!blogs.length){ %><p>No blogs.</p><% } %>
   </div>
 </div>
 
 <div class="overlay" id="overlay"></div>
-<div class="popup" id="followers"><span onclick="closePopup('followers')" style="float:right">&times;</span><h3>Followers</h3>
-  <% if(profileUser.followers.length){ %><% profileUser.followers.forEach(f=>{ %><p><a href="/profile/<%= f._id %>"><%= f.fullname %></a></p><% }) %><% }else{ %>None<% } %>
-</div>
-<div class="popup" id="following"><span onclick="closePopup('following')" style="float:right">&times;</span><h3>Following</h3>
-  <% if(profileUser.following.length){ %><% profileUser.following.forEach(f=>{ %><p><a href="/profile/<%= f._id %>"><%= f.fullname %></a></p><% }) %><% }else{ %>None<% } %>
-</div>
+<div class="popup" id="followers"><span onclick="closePopup('followers')" style="float:right">&times;</span><h3>Followers</h3><% if(profileUser.followers.length){ %><% profileUser.followers.forEach(f=>{ %><p><a href="/profile/<%= f._id %>"><%= f.fullname %></a></p><% }) %><% }else{ %>None<% } %></div>
+<div class="popup" id="following"><span onclick="closePopup('following')" style="float:right">&times;</span><h3>Following</h3><% if(profileUser.following.length){ %><% profileUser.following.forEach(f=>{ %><p><a href="/profile/<%= f._id %>"><%= f.fullname %></a></p><% }) %><% }else{ %>None<% } %></div>
 
-<script>
-  const openPopup=id=>{document.getElementById(id).style.display='block';document.getElementById('overlay').style.display='block'}
-  const closePopup=id=>{document.getElementById(id).style.display='none';document.getElementById('overlay').style.display='none'}
-</script>
+<script>const openPopup=id=>{document.getElementById(id).style.display='block';document.getElementById('overlay').style.display='block'};const closePopup=id=>{document.getElementById(id).style.display='none';document.getElementById('overlay').style.display='none'}</script>
 </body>
 </html>
