@@ -19,6 +19,7 @@ router.get("/", (req, res) => {
     user: req.user,
     success_msg: req.query.success_msg,
     error_msg: req.query.error_msg,
+    visibility: req.user.profileVisibility || "public",
   });
 });
 
@@ -29,7 +30,7 @@ router.post("/update-profile", cloudinaryUpload.single("profileImage"), async (r
       return res.redirect("/user/signin?error_msg=Please log in to update your profile");
     }
 
-    const { fullname, bio } = req.body;
+    const { fullname, bio, visibility } = req.body;
     const update = {};
 
     if (fullname?.trim()) {
@@ -43,8 +44,12 @@ router.post("/update-profile", cloudinaryUpload.single("profileImage"), async (r
       update.bio = bio.trim();
     }
 
+    if (visibility && ["public", "followers", "private"].includes(visibility)) {
+      update.profileVisibility = visibility;
+    }
+
     if (req.file) {
-      update.profileImageURL = req.file.path; // Cloudinary URL
+      update.profileImageURL = req.file.path;
     }
 
     if (!Object.keys(update).length) {
@@ -77,7 +82,7 @@ router.post("/request-password-reset", async (req, res) => {
 
     const resetToken = randomBytes(32).toString("hex");
     user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour expiry
+    user.resetPasswordExpires = Date.now() + 3600000;
     await user.save();
 
     const resetUrl = `http://${req.headers.host}/settings/reset-password/${user._id}/${resetToken}`;
@@ -158,7 +163,7 @@ router.post("/reset-password", async (req, res) => {
       return res.redirect("/settings?error_msg=Reset link expired");
     }
 
-    user.password = password; // Password will be hashed in pre-save hook
+    user.password = password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
@@ -190,7 +195,6 @@ router.post("/delete-account", async (req, res) => {
       return res.json({ success: false, error: "User not found" });
     }
 
-    // Verify password
     const userProvidedHash = createHmac("sha256", user.salt)
       .update(password)
       .digest("hex");
@@ -198,7 +202,6 @@ router.post("/delete-account", async (req, res) => {
       return res.json({ success: false, error: "Incorrect password" });
     }
 
-    // Delete user and related data
     await Promise.all([
       User.findByIdAndDelete(user._id),
       Blog.deleteMany({ createdBy: user._id }),
@@ -206,7 +209,6 @@ router.post("/delete-account", async (req, res) => {
       Notification.deleteMany({ $or: [{ sender: user._id }, { recipient: user._id }] }),
     ]);
 
-    // Clear the authentication cookie
     res.clearCookie("token");
     return res.json({ success: true, message: "Account deleted successfully" });
   } catch (error) {
