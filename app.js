@@ -5,6 +5,7 @@ const path = require("path");
 const cookieParser = require("cookie-parser");
 const methodOverride = require("method-override");
 const moment = require("moment");
+const csrf = require("csurf");
 
 const settingsRoute = require("./routes/settings");
 const userRoute = require("./routes/user");
@@ -44,6 +45,7 @@ app.use(methodOverride("_method"));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(cookieParser());
+app.use(csrf({ cookie: true }));
 app.use(checkForAuthenticationCookie("token"));
 app.use(express.static(path.resolve("./public")));
 
@@ -57,7 +59,7 @@ app.locals.moment = moment;
 // Error Handling Utility
 const renderWithError = (res, view, data, errorMsg, redirectUrl = "/") => {
   console.error(`Error in ${view}:`, errorMsg);
-  return res.render(view, { ...data, error_msg: errorMsg, success_msg: null });
+  return res.render(view, { ...data, error_msg: errorMsg, success_msg: null, csrfToken: res.locals._csrf });
 };
 
 // Home Route
@@ -87,6 +89,7 @@ app.get("/", async (req, res) => {
       blogs: blogsWithComments,
       success_msg: req.query.success_msg || null,
       error_msg: req.query.error_msg || null,
+      csrfToken: req.csrfToken(),
     });
   } catch (err) {
     renderWithError(res, "home", { user: req.user || null, blogs: [] }, "Failed to load blogs");
@@ -134,6 +137,7 @@ app.get("/search", async (req, res) => {
       query,
       success_msg: req.query.success_msg || null,
       error_msg: req.query.error_msg || null,
+      csrfToken: req.csrfToken(),
     });
   } catch (err) {
     console.error("Error in search:", err);
@@ -148,6 +152,20 @@ app.use("/comment", commentRoute);
 app.use("/profile", profileRoute);
 app.use("/settings", settingsRoute);
 app.use("/notification", notificationRoute);
+
+// CSRF Error Handler
+app.use((err, req, res, next) => {
+  if (err.code === 'EBADCSRFTOKEN') {
+    return res.status(403).render("signin", {
+      title: "Sign In",
+      user: req.user || null,
+      error: "Invalid CSRF token",
+      success_msg: null,
+      csrfToken: req.csrfToken(),
+    });
+  }
+  next(err);
+});
 
 // Start Server
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
