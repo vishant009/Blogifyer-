@@ -1,5 +1,4 @@
 const { Router } = require("express");
-const fs = require("fs").promises;
 const { randomBytes, createHmac } = require("crypto");
 const User = require("../models/user");
 const Blog = require("../models/blog");
@@ -37,7 +36,7 @@ router.get("/", async (req, res) => {
         populate: { path: "createdBy", select: "fullname profileImageURL" },
       });
 
-    const blogs = await Blog.find({ createdBy: req.user._id })
+    const blogs = await Blog.find({ createdBy: req.user._id, status: "published" })
       .populate("createdBy", "fullname profileImageURL")
       .populate("likes", "fullname profileImageURL")
       .sort({ createdAt: -1 });
@@ -55,9 +54,7 @@ router.get("/", async (req, res) => {
 // GET /profile/:id (other user's profile)
 router.get("/:id", async (req, res) => {
   try {
-    console.log("Profile route hit for ID:", req.params.id); // Debug log
     if (!mongoose.isValidObjectId(req.params.id)) {
-      console.log("Invalid ObjectId:", req.params.id);
       return renderProfile(res, req.user, null, [], false, { error_msg: "Invalid user ID" });
     }
 
@@ -70,11 +67,21 @@ router.get("/:id", async (req, res) => {
       });
 
     if (!profileUser) {
-      console.log("User not found for ID:", req.params.id);
       return renderProfile(res, req.user, null, [], false, { error_msg: "User not found" });
     }
 
-    const blogs = await Blog.find({ createdBy: req.params.id })
+    // Check profile visibility
+    if (profileUser.profileVisibility === "private" && (!req.user || req.user._id.toString() !== req.params.id)) {
+      return renderProfile(res, req.user, null, [], false, { error_msg: "This profile is private" });
+    }
+    if (profileUser.profileVisibility === "followers" && req.user) {
+      const isFollower = profileUser.followers.some(f => f._id.equals(req.user._id));
+      if (!isFollower && req.user._id.toString() !== req.params.id) {
+        return renderProfile(res, req.user, null, [], false, { error_msg: "You must follow this user to view their profile" });
+      }
+    }
+
+    const blogs = await Blog.find({ createdBy: req.params.id, status: "published" })
       .populate("createdBy", "fullname profileImageURL")
       .populate("likes", "fullname profileImageURL")
       .sort({ createdAt: -1 });
@@ -100,7 +107,7 @@ router.post("/", cloudinaryUpload.single("profileImage"), async (req, res) => {
       return res.redirect("/user/signin?error_msg=Please log in to update your profile");
     }
 
-    const { fullname, email, password, bio } = req.body;
+    const { fullname, email, password, bio, visibility } = req.body;
     const update = {};
 
     if (fullname?.trim()) {
@@ -130,11 +137,15 @@ router.post("/", cloudinaryUpload.single("profileImage"), async (req, res) => {
     }
 
     if (req.file) {
-      update.profileImageURL = req.file.path; // Cloudinary url
+      update.profileImageURL = req.file.path;
     }
 
     if (bio?.trim()) {
       update.bio = bio.trim();
+    }
+
+    if (visibility && ["public", "followers", "private"].includes(visibility)) {
+      update.profileVisibility = visibility;
     }
 
     if (!Object.keys(update).length) {
