@@ -15,6 +15,8 @@
     :root {
       --primary-color: #3498db;
       --secondary-color: #2c3e50;
+      --success-color: #27ae60;
+      --danger-color: #e74c3c;
       --dark-bg: #1a1a1a;
       --card-bg: #2a2a2a;
       --text-primary: #ffffff;
@@ -189,6 +191,22 @@
       background-color: var(--hover-color);
     }
 
+    .notification-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background-color: var(--danger-color);
+      color: white;
+      font-size: 0.7rem;
+      padding: 0.2rem 0.4rem;
+      border-radius: 50%;
+      min-width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
     @media (max-width: 768px) {
       nav ul.main-nav {
         display: none;
@@ -243,6 +261,46 @@
       background: var(--text-secondary);
     }
   </style>
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="/" class="logo"><i class="fas fa-blog"></i> Blogify</a>
+      <button class="hamburger"><i class="fas fa-bars"></i></button>
+      <ul class="main-nav">
+        <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
+        <% if (user) { %>
+          <li><a href="/blog/addBlog"><i class="fas fa-plus"></i> Add Blog</a></li>
+        <% } else { %>
+          <li><a href="/user/signin"><i class="fas fa-sign-in-alt"></i> Sign In</a></li>
+          <li><a href="/user/signup"><i class="fas fa-user-plus"></i> Sign Up</a></li>
+        <% } %>
+      </ul>
+      <% if (user) { %>
+        <div class="dropdown">
+          <button class="dropdown-toggle">
+            <img src="<%= user.profileImageURL || '/default-profile.png' %>" alt="Profile" class="profile-avatar">
+            <%= user.fullname %>
+            <i class="fas fa-chevron-down"></i>
+          </button>
+          <div class="dropdown-menu">
+            <a href="/profile"><i class="fas fa-user"></i> Profile</a>
+            <a href="/notification"><i class="fas fa-bell"></i> Notifications
+              <% if (notifications && notifications.filter(n => n.status !== 'READ').length > 0) { %>
+                <span class="notification-badge"><%= notifications.filter(n => n.status !== 'READ').length %></span>
+              <% } %>
+            </a>
+            <a href="/settings"><i class="fas fa-cog"></i> Settings</a>
+            <a href="/user/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+          </div>
+        </div>
+      <% } %>
+      <form action="/search" method="GET">
+        <input type="text" name="q" placeholder="Search users or blogs..." aria-label="Search">
+        <button type="submit"><i class="fas fa-search"></i></button>
+      </form>
+    </nav>
+  </header>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const hamburger = document.querySelector('.hamburger');
@@ -269,41 +327,5 @@
       }
     });
   </script>
-</head>
-<body>
-  <header>
-    <nav>
-      <a href="/" class="logo"><i class="fas fa-blog"></i> Blogify</a>
-      <button class="hamburger"><i class="fas fa-bars"></i></button>
-      <ul class="main-nav">
-        <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
-        <% if (user) { %>
-          <li><a href="/blog/addBlog"><i class="fas fa-plus"></i> Add Blog</a></li>
-        <% } else { %>
-          <li><a href="/user/signin"><i class="fas fa-sign-in-alt"></i> Sign In</a></li>
-          <li><a href="/user/signup"><i class="fas fa-user-plus"></i> Sign Up</a></li>
-        <% } %>
-      </ul>
-      <% if (user) { %>
-        <div class="dropdown">
-          <button class="dropdown-toggle">
-            <img src="<%= user.profileImageURL %>" alt="Profile" class="profile-avatar">
-            <%= user.fullname %>
-            <i class="fas fa-chevron-down"></i>
-          </button>
-          <div class="dropdown-menu">
-            <a href="/profile"><i class="fas fa-user"></i> Profile</a>
-            <a href="/notification"><i class="fas fa-bell"></i> Notifications</a>
-            <a href="/settings"><i class="fas fa-cog"></i> Settings</a>
-            <a href="/user/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
-          </div>
-        </div>
-      <% } %>
-      <form action="/search" method="GET">
-        <input type="text" name="q" placeholder="Search users or blogs..." aria-label="Search">
-        <button type="submit"><i class="fas fa-search"></i></button>
-      </form>
-    </nav>
-  </header>
 </body>
 </html>
