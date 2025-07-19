@@ -8,11 +8,12 @@
   <style>
     body{margin:0;background:#1a2634;color:#ecf0f1;font-family:Arial}
     .container{max-width:800px;margin:2rem auto;padding:1rem}
-    .cover{max-width:100%;border-radius:8px}
-    .meta{display:flex;align-items:center;gap:.5rem;margin:.5rem 0;font-size:.9rem;color:#7f8c8d}
+    .cover{max-width:100%;border-radius:8px;margin-bottom:1rem}
+    .meta{display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;font-size:.9rem;color:#7f8c8d}
     .meta img{width:30px;height:30px;border-radius:50%}
     .actions{margin:1rem 0}
     .btn{padding:.5rem 1rem;border:none;border-radius:4px;background:#3498db;color:#fff;cursor:pointer;margin-right:.5rem}
+    .liked{background:#e74c3c}
     .comment{background:#2c3e50;padding:1rem;border-radius:6px;margin-bottom:.7rem}
     .comment img{width:30px;height:30px;border-radius:50%;vertical-align:middle;margin-right:.5rem}
     textarea{width:100%;padding:.7rem;border:1px solid #34495e;border-radius:4px;background:#34495e;color:#ecf0f1;resize:vertical}
@@ -27,7 +28,7 @@
   <h1><%= blog.title %></h1>
   <% if(blog.coverImage){ %><img class="cover" src="<%= blog.coverImage %>" alt="cover"><% } %>
   <div class="meta">
-    <img src="<%= blog.createdBy.profileImageURL %>">
+    <img src="<%= blog.createdBy.profileImageURL||'/default.png' %>">
     <a href="/profile/<%= blog.createdBy._id %>"><%= blog.createdBy.fullname %></a>
     <span><%= moment(blog.createdAt).fromNow() %></span>
   </div>
@@ -41,7 +42,7 @@
         </button>
       </form>
       <% if(user._id.toString()===blog.createdBy._id.toString()){ %>
-        <form action="/blog/<%= blog._id %>?_method=DELETE" method="POST" onsubmit="return confirm('Delete this blog?')">
+        <form action="/blog/<%= blog._id %>?_method=DELETE" method="POST" onsubmit="return confirm('Delete this blog?')" style="display:inline">
           <button class="btn" style="background:#e74c3c">Delete</button>
         </form>
       <% } %>
@@ -51,7 +52,7 @@
   <h3>Comments</h3>
   <% comments.forEach(c=>{ %>
     <div class="comment">
-      <img src="<%= c.createdBy.profileImageURL %>">
+      <img src="<%= c.createdBy.profileImageURL||'/default.png' %>">
       <strong><%= c.createdBy.fullname %></strong>: <%= c.content %>
       <br><small><%= moment(c.createdAt).fromNow() %></small>
       <% if(user && user._id.toString()===c.createdBy._id.toString()){ %>
