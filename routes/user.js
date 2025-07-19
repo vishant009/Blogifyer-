@@ -12,30 +12,24 @@ const { body, validationResult } = require("express-validator");
 const router = Router();
 const csrfProtection = csrf({ cookie: true });
 
-// Rate limiter for signin and forgot password
+// Rate limiters
 const signInLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 5,
   message: "Too many sign-in attempts, please try again later",
 });
 
 const forgotPasswordLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 3, // Limit each IP to 3 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 3,
   message: "Too many password reset requests, please try again later",
 });
 
-// Generate secure token
-const generateSecureToken = () => {
-  return crypto.randomBytes(32).toString("hex");
-};
+// Generate secure token and code
+const generateSecureToken = () => crypto.randomBytes(32).toString("hex");
+const generateCode = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-// Generate 6-digit code
-const generateCode = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-};
-
-// Input validation middleware for signup
+// Input validation middleware
 const validateSignup = [
   body("fullname").trim().notEmpty().withMessage("Full name is required"),
   body("email").isEmail().normalizeEmail().withMessage("Invalid email address"),
@@ -45,13 +39,12 @@ const validateSignup = [
     .withMessage("Password must be at least 8 characters long and include uppercase, lowercase, number, and special character"),
 ];
 
-// Input validation middleware for signin
 const validateSignin = [
   body("email").isEmail().normalizeEmail().withMessage("Invalid email address"),
   body("password").notEmpty().withMessage("Password is required"),
 ];
 
-// GET /user/signin
+// Routes
 router.get("/signin", csrfProtection, (req, res) => {
   return res.render("signin", {
     title: "Sign In",
@@ -62,7 +55,6 @@ router.get("/signin", csrfProtection, (req, res) => {
   });
 });
 
-// GET /user/signup
 router.get("/signup", csrfProtection, (req, res) => {
   return res.render("signup", {
     title: "Sign Up",
@@ -76,7 +68,6 @@ router.get("/signup", csrfProtection, (req, res) => {
   });
 });
 
-// POST /user/signup
 router.post(
   "/signup",
   csrfProtection,
@@ -112,20 +103,17 @@ router.post(
         });
       }
 
-      // Store user in temporary collection or update existing unverified user
       const verificationCode = generateCode();
       const verificationToken = generateSecureToken();
 
       if (existingUser && !existingUser.isVerified) {
-        // Update existing unverified user
         existingUser.fullname = fullname;
         existingUser.password = password;
         existingUser.verificationCode = verificationCode;
         existingUser.verificationToken = verificationToken;
-        existingUser.verificationCodeExpires = Date.now() + 3600000; // 1 hour
+        existingUser.verificationCodeExpires = Date.now() + 3600000;
         await existingUser.save();
       } else {
-        // Create new unverified user
         await User.create({
           fullname,
           email,
@@ -136,6 +124,7 @@ router.post(
           verificationCode,
           verificationToken,
           verificationCodeExpires: Date.now() + 3600000,
+          profileVisibility: "public", // Default visibility
         });
       }
 
@@ -145,10 +134,9 @@ router.post(
         subject: "Verify Your Blogify Account",
         html: `
           <h2>Welcome to Blogify!</h2>
-          <p>Please verify your email by entering the following code on the verification page:</p>
+          <p>Please verify your email by entering the following code:</p>
           <h3>${verificationCode}</h3>
-          <p>Or click the link below:</p>
-          <a href="${verificationUrl}">Verify Email</a>
+          <p>Or click: <a href="${verificationUrl}">Verify Email</a></p>
           <p>This code expires in 1 hour.</p>
         `,
       });
@@ -162,7 +150,7 @@ router.post(
         email,
         fullname,
         verificationToken,
-        csrfToken: req.csrfToken(),
+        csrfToken: req.csrfToken
       });
     } catch (error) {
       return res.render("signup", {
@@ -179,7 +167,6 @@ router.post(
   }
 );
 
-// GET /user/verify-email/:token
 router.get("/verify-email/:token", async (req, res) => {
   try {
     const user = await User.findOne({ verificationToken: req.params.token });
@@ -203,7 +190,6 @@ router.get("/verify-email/:token", async (req, res) => {
   }
 });
 
-// POST /user/verify-email/:token
 router.post("/verify-email/:token", csrfProtection, async (req, res) => {
   const { code } = req.body;
   const { token } = req.params;
@@ -237,7 +223,6 @@ router.post("/verify-email/:token", csrfProtection, async (req, res) => {
   }
 });
 
-// POST /user/signin
 router.post("/signin", signInLimiter, validateSignin, csrfProtection, async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -258,7 +243,7 @@ router.post("/signin", signInLimiter, validateSignin, csrfProtection, async (req
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
-        maxAge: 24 * 60 * 60 * 1000, // 1 day
+        maxAge: 24 * 60 * 60 * 1000,
       })
       .redirect("/?success_msg=Signed in successfully");
   } catch (error) {
@@ -272,7 +257,6 @@ router.post("/signin", signInLimiter, validateSignin, csrfProtection, async (req
   }
 });
 
-// GET /user/forgot-password
 router.get("/forgot-password", csrfProtection, (req, res) => {
   return res.render("forgot-password", {
     title: "Forgot Password",
@@ -286,7 +270,6 @@ router.get("/forgot-password", csrfProtection, (req, res) => {
   });
 });
 
-// POST /user/forgot-password
 router.post("/forgot-password", forgotPasswordLimiter, csrfProtection, async (req, res) => {
   const { email } = req.body;
   if (!validator.isEmail(email)) {
@@ -310,7 +293,7 @@ router.post("/forgot-password", forgotPasswordLimiter, csrfProtection, async (re
     const resetCode = generateCode();
     user.resetPasswordToken = resetToken;
     user.resetPasswordCode = resetCode;
-    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    user.resetPasswordExpires = Date.now() + 3600000;
     await user.save();
 
     const resetUrl = `http://${req.headers.host}/user/reset-password/${user._id}/${resetToken}`;
@@ -319,10 +302,9 @@ router.post("/forgot-password", forgotPasswordLimiter, csrfProtection, async (re
       subject: "Blogify Password Reset",
       html: `
         <h2>Reset Your Blogify Password</h2>
-        <p>Please enter the following code in the popup on the forgot password page:</p>
+        <p>Please enter the following code in the popup:</p>
         <h3>${resetCode}</h3>
-        <p>Or click the link below:</p>
-        <a href="${resetUrl}">Reset Password</a>
+        <p>Or click: <a href="${resetUrl}">Reset Password</a></p>
         <p>This code expires in 1 hour.</p>
       `,
     });
@@ -351,7 +333,6 @@ router.post("/forgot-password", forgotPasswordLimiter, csrfProtection, async (re
   }
 });
 
-// POST /user/verify-reset-code/:id
 router.post("/verify-reset-code/:id", csrfProtection, async (req, res) => {
   const { code } = req.body;
   const { id } = req.params;
@@ -377,7 +358,6 @@ router.post("/verify-reset-code/:id", csrfProtection, async (req, res) => {
   }
 });
 
-// GET /user/reset-password/:id/:token
 router.get("/reset-password/:id/:token", csrfProtection, async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
@@ -399,7 +379,6 @@ router.get("/reset-password/:id/:token", csrfProtection, async (req, res) => {
   }
 });
 
-// POST /user/reset-password/:id/:token
 router.post(
   "/reset-password/:id/:token",
   csrfProtection,
@@ -433,7 +412,7 @@ router.post(
       if (user.resetPasswordToken !== token || user.resetPasswordCode !== code) throw new Error("Invalid reset token or code");
       if (user.resetPasswordExpires < Date.now()) throw new Error("Reset token expired");
 
-      user.password = password; // Password will be hashed in pre-save hook
+      user.password = password;
       user.resetPasswordToken = undefined;
       user.resetPasswordCode = undefined;
       user.resetPasswordExpires = undefined;
@@ -454,12 +433,10 @@ router.post(
   }
 );
 
-// GET /user/logout
 router.get("/logout", (req, res) => {
   return res.clearCookie("token").redirect("/?success_msg=Logged out successfully");
 });
 
-// POST /user/follow/:id
 router.post("/follow/:id", async (req, res) => {
   if (!req.user) {
     return res.redirect("/user/signin?error_msg=Please sign in to follow users");
@@ -503,7 +480,6 @@ router.post("/follow/:id", async (req, res) => {
   }
 });
 
-// POST /user/unfollow/:id
 router.post("/unfollow/:id", async (req, res) => {
   if (!req.user) {
     return res.redirect("/user/signin?error_msg=Please sign in to unfollow users");
@@ -531,6 +507,25 @@ router.post("/unfollow/:id", async (req, res) => {
   } catch (error) {
     console.error("Error unfollowing user:", error);
     return res.redirect(`/?error_msg=Failed to unfollow user`);
+  }
+});
+
+router.post("/update-visibility", csrfProtection, async (req, res) => {
+  if (!req.user) {
+    return res.redirect("/user/signin?error_msg=Please sign in to update visibility");
+  }
+
+  const { visibility } = req.body;
+  if (!["public", "followers", "private"].includes(visibility)) {
+    return res.redirect("/settings?error_msg=Invalid visibility setting");
+  }
+
+  try {
+    await User.findByIdAndUpdate(req.user._id, { profileVisibility: visibility }, { new: true });
+    return res.redirect("/settings?success_msg=Profile visibility updated");
+  } catch (error) {
+    console.error("Error updating visibility:", error);
+    return res.redirect("/settings?error_msg=Failed to update visibility");
   }
 });
 
