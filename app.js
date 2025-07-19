@@ -6,6 +6,7 @@ const cookieParser = require("cookie-parser");
 const methodOverride = require("method-override");
 const moment = require("moment");
 const csrf = require("csurf");
+const rateLimit = require("express-rate-limit");
 
 const settingsRoute = require("./routes/settings");
 const userRoute = require("./routes/user");
@@ -19,7 +20,7 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 
 // Validate environment variables
-const requiredEnvVars = ['MONGODB_URI', 'PORT', 'JWT_SECRET', 'EMAIL_USER', 'EMAIL_PASS'];
+const requiredEnvVars = ['MONGODB_URI', 'PORT', 'JWT_SECRET', 'EMAIL_USER', 'EMAIL_PASS', 'CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'];
 requiredEnvVars.forEach((varName) => {
   if (!process.env[varName]) {
     console.error(`Error: Environment variable ${varName} is missing`);
@@ -30,15 +31,25 @@ requiredEnvVars.forEach((varName) => {
 // Debug: Log environment variables (mask sensitive info)
 console.log('MONGODB_URI:', process.env.MONGODB_URI);
 console.log('PORT:', process.env.PORT);
-console.log('JWT_SECRET:', process.env.JWT_SECRET);
+console.log('JWT_SECRET:', process.env.JWT_SECRET ? '****' : 'missing');
 console.log('EMAIL_USER:', process.env.EMAIL_USER);
-console.log('EMAIL_PASS:', '****'); // Mask password
+console.log('EMAIL_PASS:', '****');
+console.log('CLOUDINARY_CLOUD_NAME:', process.env.CLOUDINARY_CLOUD_NAME);
+console.log('CLOUDINARY_API_KEY:', '****');
+console.log('CLOUDINARY_API_SECRET:', '****');
 
 // MongoDB Connection
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
+
+// Rate limiter for blog creation
+const createBlogLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 blog posts per windowMs
+  message: "Too many blog creation attempts, please try again later",
+});
 
 // Middleware
 app.use(methodOverride("_method"));
@@ -67,13 +78,13 @@ app.get("/", async (req, res) => {
   try {
     const Blog = require("./models/blog");
     const Comment = require("./models/comments");
-    const allBlogs = await Blog.find()
+    const allBlogs = await Blog.find({ status: "published" })
       .populate("createdBy", "fullname email profileImageURL followers")
       .sort({ createdAt: -1 });
 
     const blogsWithComments = await Promise.all(
       allBlogs.map(async (blog) => {
-        const comments = await Comment.find({ blogId: blog._id })
+        const comments = await Comment.find({ blogId: blog._id, parentCommentId: null })
           .populate("createdBy", "fullname profileImageURL")
           .populate("likes", "fullname profileImageURL")
           .sort({ createdAt: -1 });
@@ -113,6 +124,7 @@ app.get("/search", async (req, res) => {
           { fullname: { $regex: query, $options: "i" } },
           { email: { $regex: query, $options: "i" } },
         ],
+        profileVisibility: { $in: ["public", req.user ? "followers" : null] },
       })
         .populate("followers", "fullname profileImageURL")
         .sort({ fullname: 1 });
@@ -123,7 +135,9 @@ app.get("/search", async (req, res) => {
         $or: [
           { title: { $regex: query, $options: "i" } },
           { body: { $regex: query, $options: "i" } },
+          { tags: { $regex: query, $options: "i" } },
         ],
+        status: "published",
       })
         .populate("createdBy", "fullname profileImageURL")
         .sort({ createdAt: -1 });
@@ -145,9 +159,51 @@ app.get("/search", async (req, res) => {
   }
 });
 
+// Search Autocomplete Endpoint
+app.get("/search/autocomplete", async (req, res) => {
+  try {
+    const { q } = req.query;
+    const query = q ? q.trim() : "";
+    if (!query) return res.json([]);
+
+    const User = require("./models/user");
+    const Blog = require("./models/blog");
+
+    const users = await User.find({
+      $or: [
+        { fullname: { $regex: query, $options: "i" } },
+        { email: { $regex: query, $options: "i" } },
+      ],
+      profileVisibility: { $in: ["public", req.user ? "followers" : null] },
+    })
+      .select("fullname")
+      .limit(5);
+
+    const blogs = await Blog.find({
+      $or: [
+        { title: { $regex: query, $options: "i" } },
+        { tags: { $regex: query, $options: "i" } },
+      ],
+      status: "published",
+    })
+      .select("title")
+      .limit(5);
+
+    const suggestions = [
+      ...users.map(u => ({ type: "user", value: u.fullname })),
+      ...blogs.map(b => ({ type: "blog", value: b.title })),
+    ];
+
+    res.json(suggestions);
+  } catch (err) {
+    console.error("Error in autocomplete:", err);
+    res.status(500).json({ error: "Failed to fetch suggestions" });
+  }
+});
+
 // Routes
 app.use("/user", userRoute);
-app.use("/blog", blogRoute);
+app.use("/blog", createBlogLimiter, blogRoute);
 app.use("/comment", commentRoute);
 app.use("/profile", profileRoute);
 app.use("/settings", settingsRoute);
@@ -165,6 +221,17 @@ app.use((err, req, res, next) => {
     });
   }
   next(err);
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("Global error:", err);
+  res.status(500).render("error", {
+    user: req.user || null,
+    error_msg: "An unexpected error occurred. Please try again later.",
+    success_msg: null,
+    csrfToken: req.csrfToken(),
+  });
 });
 
 // Start Server
