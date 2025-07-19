@@ -1,10 +1,10 @@
-const { Router } = require("express");
-const Comment = require("../models/comments");
+// routes/comments.js
+const { Router } = require('express');
+const Comment = require('../models/comments');
 
 const router = Router();
 
-// POST /comment/:blogId
-router.post("/:blogId", async (req, res) => {
+router.post('/:blogId', async (req, res) => {
   try {
     if (!req.user) {
       return res.redirect(`/blog/${req.params.blogId}?error_msg=Please log in to add a comment`);
@@ -13,24 +13,21 @@ router.post("/:blogId", async (req, res) => {
     if (!content?.trim()) {
       return res.redirect(`/blog/${req.params.blogId}?error_msg=Comment content is required`);
     }
-
     await Comment.create({
       content,
       blogId: req.params.blogId,
       createdBy: req.user._id,
       parentCommentId: parentCommentId || null,
-      likes: [],
+      likes: []
     });
-
     return res.redirect(`/blog/${req.params.blogId}?success_msg=Comment added successfully`);
   } catch (err) {
-    console.error("Error adding comment:", err);
+    console.error('Error adding comment:', err);
     return res.redirect(`/blog/${req.params.blogId}?error_msg=Failed to add comment`);
   }
 });
 
-// DELETE /comment/:commentId
-router.delete("/:commentId", async (req, res) => {
+router.delete('/:commentId', async (req, res) => {
   try {
     const comment = await Comment.findById(req.params.commentId);
     if (!comment) {
@@ -42,13 +39,12 @@ router.delete("/:commentId", async (req, res) => {
     await Comment.deleteMany({ $or: [{ _id: req.params.commentId }, { parentCommentId: req.params.commentId }] });
     return res.redirect(`/blog/${comment.blogId}?success_msg=Comment deleted successfully`);
   } catch (err) {
-    console.error("Error deleting comment:", err);
+    console.error('Error deleting comment:', err);
     return res.redirect(`/blog/${req.query.blogId || ''}?error_msg=Failed to delete comment`);
   }
 });
 
-// POST /comment/:commentId/like
-router.post("/:commentId/like", async (req, res) => {
+router.post('/:commentId/like', async (req, res) => {
   try {
     if (!req.user) {
       return res.redirect(`/blog/${req.query.blogId || ''}?error_msg=Please log in to like a comment`);
@@ -64,13 +60,12 @@ router.post("/:commentId/like", async (req, res) => {
     await comment.save();
     return res.redirect(`/blog/${comment.blogId}?success_msg=Comment liked successfully`);
   } catch (err) {
-    console.error("Error liking comment:", err);
+    console.error('Error liking comment:', err);
     return res.redirect(`/blog/${req.query.blogId || ''}?error_msg=Failed to like comment`);
   }
 });
 
-// DELETE /comment/:commentId/like
-router.delete("/:commentId/like", async (req, res) => {
+router.delete('/:commentId/like', async (req, res) => {
   try {
     if (!req.user) {
       return res.redirect(`/blog/${req.query.blogId || ''}?error_msg=Please log in to unlike a comment`);
@@ -86,7 +81,7 @@ router.delete("/:commentId/like", async (req, res) => {
     await comment.save();
     return res.redirect(`/blog/${comment.blogId}?success_msg=Comment unliked successfully`);
   } catch (err) {
-    console.error("Error unliking comment:", err);
+    console.error('Error unliking comment:', err);
     return res.redirect(`/blog/${req.query.blogId || ''}?error_msg=Failed to unlike comment`);
   }
 });
