@@ -1,44 +1,100 @@
-<%- include('partials/head') %>
-<%- include('partials/nav') %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Home | Blogify</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    :root{--bg:#1a2634;--card:#2c3e50;--accent:#3498db;--text:#ecf0f1;--muted:#7f8c8d}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
+    header{position:sticky;top:0;z-index:1000;background:var(--card);padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--muted)}
+    header a.logo{font-size:1.4rem;font-weight:bold;color:var(--accent);text-decoration:none}
+    header form{display:flex;gap:.5rem}header input{padding:.35rem .5rem;border-radius:4px;border:1px solid var(--muted);background:#34495e;color:var(--text)}
+    header button{padding:.35rem .7rem;background:var(--accent);border:none;border-radius:4px;color:#fff;cursor:pointer}
+    .main{max-width:1000px;margin:2rem auto;padding:0 1rem;display:grid;gap:2rem}
+    .blog-card{background:var(--card);border-radius:8px;padding:1.2rem;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+    .blog-card img{max-width:100%;border-radius:6px;margin-bottom:.8rem}
+    .blog-card h2{margin:.3rem 0 .5rem;font-size:1.3rem}
+    .blog-card h2 a{color:var(--accent);text-decoration:none}
+    .blog-meta{font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:.5rem}
+    .blog-actions{margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap}
+    .btn{padding:.5rem .9rem;border:none;border-radius:4px;font-size:.85rem;cursor:pointer;transition:.2s}
+    .like-btn{background:var(--accent);color:#fff}
+    .like-btn.liked{background:#e74c3c}
+    .follow-btn{background:#27ae60;color:#fff}
+    .follow-btn.following{background:#c0392b}
+    .comments{display:none;margin-top:1rem}
+    .comments.active{display:block}
+    .comment{background:#34495e;padding:.7rem;border-radius:6px;margin-bottom:.5rem}
+    .comment img{width:30px;height:30px;border-radius:50%;vertical-align:middle;margin-right:.5rem}
+    @media(max-width:600px){.main{padding:1rem}}
+  </style>
+</head>
+<body>
+<header>
+  <a href="/" class="logo"><i class="fas fa-blog"></i> Blogify</a>
+  <form action="/search" method="GET">
+    <input name="q" placeholder="Search…" required>
+    <button><i class="fas fa-search"></i></button>
+  </form>
+</header>
 
-<section style="padding:3rem 0;text-align:center;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff">
-  <div class="container">
-    <h1 style="font-size:2.5rem;margin-bottom:.5rem">Welcome to Blogify</h1>
-    <p style="font-size:1.125rem;margin-bottom:1.5rem">Read, write and share ideas with the world.</p>
-    <% if(!user){ %><a href="/user/signup" class="btn" style="background:#fff;color:var(--primary)">Start Writing</a><% } %>
-  </div>
-</section>
+<div class="main">
+  <% if(success_msg){ %><p style="background:#27ae6020;color:#27ae60;padding:.8rem;border-radius:6px"><i class="fas fa-check-circle"></i> <%= success_msg %></p><% } %>
+  <% if(error_msg){ %><p style="background:#e74c3c20;color:#e74c3c;padding:.8rem;border-radius:6px"><i class="fas fa-exclamation-circle"></i> <%= error_msg %></p><% } %>
 
-<main class="container" style="padding:2rem 0">
-  <div class="grid grid-3" id="blogGrid">
-    <% blogs.forEach(b=>{ %>
-    <article class="card">
-      <a href="/blog/<%= b._id %>">
-        <img src="<%= b.coverImage || '/images/default-cover.jpg' %>" alt="" style="border-radius:var(--radius);margin-bottom:.75rem">
-      </a>
-      <h2 style="font-size:1.25rem;margin-bottom:.5rem"><a href="/blog/<%= b._id %>"><%= b.title %></a></h2>
-      <div class="flex" style="font-size:.875rem;color:var(--text-soft)">
-        <img src="<%= b.createdBy.profileImageURL %>" class="avatar">
-        <span><%= b.createdBy.fullname %></span>
+  <% blogs.forEach(blog=>{ %>
+    <div class="blog-card">
+      <% if(blog.coverImage){ %><img src="<%= blog.coverImage %>" alt="cover"><% } %>
+      <h2><a href="/blog/<%= blog._id %>"><%= blog.title %></a></h2>
+      <div class="blog-meta">
+        <img src="<%= blog.createdBy.profileImageURL %>" style="width:24px;height:24px;border-radius:50%">
+        <a href="/profile/<%= blog.createdBy._id %>"><%= blog.createdBy.fullname %></a>
+        <span><%= moment(blog.createdAt).fromNow() %></span>
       </div>
-      <div class="flex" style="margin-top:.75rem;font-size:.875rem">
-        <span>❤️ <%= b.likes.length %></span>
-        <span>💬 <%= b.comments.length %></span>
-      </div>
-    </article>
-    <% }) %>
-  </div>
-  <% if(blogs.length===0){ %>
-    <div style="text-align:center;color:var(--text-soft)">No blogs yet.</div>
-  <% } %>
-</main>
+      <p><%= blog.body.slice(0,150) %>…</p>
 
-<%- include('partials/toast') %>
+      <div class="blog-actions">
+        <% if(user){ %>
+          <form action="/blog/<%= blog._id %>/like" method="POST" style="display:inline">
+            <button class="btn like-btn <%= blog.likes.includes(user._id)?'liked':'' %>">
+              <i class="fas <%= blog.likes.includes(user._id)?'fa-heart':'fa-heart-broken' %>"></i>
+              <%= blog.likes.length %>
+            </button>
+          </form>
+
+          <% if(user._id.toString()!==blog.createdBy._id.toString()){ %>
+            <form action="<%= blog.isFollowing?`/user/unfollow/${blog.createdBy._id}`:`/user/follow/${blog.createdBy._id}` %>" method="POST" style="display:inline">
+              <button class="btn follow-btn <%= blog.isFollowing?'following':'' %>">
+                <i class="fas <%= blog.isFollowing?'fa-user-minus':'fa-user-plus' %>"></i>
+                <%= blog.isFollowing?'Unfollow':'Follow' %>
+              </button>
+            </form>
+          <% } %>
+        <% } %>
+        <a href="/blog/<%= blog._id %>" class="btn like-btn">View</a>
+      </div>
+
+      <div class="comments">
+        <% blog.comments.forEach(c=>{ %>
+          <div class="comment">
+            <img src="<%= c.createdBy.profileImageURL %>">
+            <strong><%= c.createdBy.fullname %></strong>: <%= c.content %>
+            <br><small><%= moment(c.createdAt).fromNow() %></small>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  <% }) %>
+
+  <% if(!blogs.length){ %><p>No blogs yet.</p><% } %>
+</div>
+
 <script>
-/* lazy toast */
-const url=new URLSearchParams(location.search);
-if(url.get('success_msg')) toast(url.get('success_msg'),'success');
-if(url.get('error_msg')) toast(url.get('error_msg'),'error');
-
-/* infinite scroll placeholder (optional) */
+  document.addEventListener('click',e=>{
+    if(e.target.classList.contains('like-btn')||e.target.classList.contains('follow-btn')) return;
+  });
 </script>
+</body>
+</html>
