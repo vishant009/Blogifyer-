@@ -22,7 +22,7 @@
   <% if(error_msg){ %><p style="color:#e74c3c"><%= error_msg %></p><% } %>
 
   <div class="profile">
-    <img src="<%= profileUser.profileImageURL %>">
+    <img src="<%= profileUser.profileImageURL||'/default.png' %>">
     <div>
       <h2><%= profileUser.fullname %></h2>
       <p><%= profileUser.bio||'No bio' %></p>
@@ -48,17 +48,12 @@
   </div>
 </div>
 
-<!-- followers/following popups -->
 <div class="overlay" id="overlay"></div>
 <div class="popup" id="followers"><span onclick="closePopup('followers')" style="float:right">&times;</span><h3>Followers</h3>
-  <% if(profileUser.followers.length){ %>
-    <% profileUser.followers.forEach(f=>{ %><p><a href="/profile/<%= f._id %>"><%= f.fullname %></a></p><% }) %>
-  <% }else{ %>None<% } %>
+  <% if(profileUser.followers.length){ %><% profileUser.followers.forEach(f=>{ %><p><a href="/profile/<%= f._id %>"><%= f.fullname %></a></p><% }) %><% }else{ %>None<% } %>
 </div>
 <div class="popup" id="following"><span onclick="closePopup('following')" style="float:right">&times;</span><h3>Following</h3>
-  <% if(profileUser.following.length){ %>
-    <% profileUser.following.forEach(f=>{ %><p><a href="/profile/<%= f._id %>"><%= f.fullname %></a></p><% }) %>
-  <% }else{ %>None<% } %>
+  <% if(profileUser.following.length){ %><% profileUser.following.forEach(f=>{ %><p><a href="/profile/<%= f._id %>"><%= f.fullname %></a></p><% }) %><% }else{ %>None<% } %>
 </div>
 
 <script>
