@@ -28,6 +28,7 @@
   <div class="section">
     <h2>Update Profile</h2>
     <form action="/settings/update-profile" method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <label>Username</label>
       <input type="text" name="fullname" value="<%= user.fullname %>">
       <label>Bio</label>
@@ -55,7 +56,6 @@
   </div>
 </div>
 
-<!-- popups -->
 <div class="overlay" id="overlay"></div>
 <div class="popup" id="passPopup">
   <span class="close" onclick="closePopup('passPopup')">&times;</span>
