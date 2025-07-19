@@ -21,23 +21,10 @@
   <% if(error_msg){ %><p style="color:#e74c3c"><%= error_msg %></p><% } %>
 
   <h2>Users</h2>
-  <% if(users.length){ %>
-    <% users.forEach(u=>{ %>
-      <div class="result">
-        <img src="<%= u.profileImageURL||'/default.png' %>">
-        <a href="/profile/<%= u._id %>"><%= u.fullname %></a>
-      </div>
-    <% }) %>
-  <% }else{ %><p>No users.</p><% } %>
+  <% if(users.length){ %><% users.forEach(u=>{ %><div class="result"><img src="<%= u.profileImageURL||'/default.png' %>"><a href="/profile/<%= u._id %>"><%= u.fullname %></a></div><% }) %><% }else{ %><p>No users.</p><% } %>
 
   <h2>Blogs</h2>
-  <% if(blogs.length){ %>
-    <% blogs.forEach(b=>{ %>
-      <div class="result">
-        <a href="/blog/<%= b._id %>"><%= b.title %></a> – <small><%= moment(b.createdAt).fromNow() %></small>
-      </div>
-    <% }) %>
-  <% }else{ %><p>No blogs.</p><% } %>
+  <% if(blogs.length){ %><% blogs.forEach(b=>{ %><div class="result"><a href="/blog/<%= b._id %>"><%= b.title %></a> – <small><%= moment(b.createdAt).fromNow() %></small></div><% }) %><% }else{ %><p>No blogs.</p><% } %>
 </div>
 </body>
 </html>
