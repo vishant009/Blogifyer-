@@ -8,7 +8,7 @@ const moment = require('moment');
 const csurf = require('csurf');
 const rateLimit = require('express-rate-limit');
 const session = require('express-session');
-const { createHmac } = require('crypto'); // ✅ ADDED
+const sanitizeHtml = require('sanitize-html');
 const { checkForAuthenticationCookie } = require('./middlewares/auth');
 
 const settingsRoute = require('./routes/settings');
@@ -21,6 +21,7 @@ const notificationRoute = require('./routes/notification');
 const app = express();
 const PORT = process.env.PORT || 8000;
 
+// Environment variable validation
 const requiredEnvVars = [
   'MONGODB_URI',
   'JWT_SECRET',
@@ -28,7 +29,8 @@ const requiredEnvVars = [
   'EMAIL_PASS',
   'CLOUDINARY_CLOUD_NAME',
   'CLOUDINARY_API_KEY',
-  'CLOUDINARY_API_SECRET'
+  'CLOUDINARY_API_SECRET',
+  'SESSION_SECRET'
 ];
 requiredEnvVars.forEach((varName) => {
   if (!process.env[varName]) {
@@ -37,24 +39,33 @@ requiredEnvVars.forEach((varName) => {
   }
 });
 
+// MongoDB connection
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => console.log('MongoDB connected'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
+// Rate limiters
 const createBlogLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5,
   message: 'Too many blog creation attempts, please try again later'
 });
 
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  message: 'Too many login attempts, please try again later'
+});
+
+// Middleware
 app.use(methodOverride('_method'));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(cookieParser());
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || 'your-secret',
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false
   })
@@ -63,23 +74,31 @@ app.use(csurf({ cookie: true }));
 app.use(checkForAuthenticationCookie('token'));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// View engine setup
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.locals.moment = moment;
 
+// CSRF token middleware
 app.use((req, res, next) => {
   res.locals._csrf = req.csrfToken();
   next();
 });
 
-// Home Route
+// Home Route with Pagination
 app.get('/', async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
+    const skip = (page - 1) * limit;
     const Blog = require('./models/blog');
     const Comment = require('./models/comments');
+    const totalBlogs = await Blog.countDocuments({ status: 'published' });
     const allBlogs = await Blog.find({ status: 'published' })
       .populate('createdBy', 'fullname email profileImageURL followers')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     const blogsWithComments = await Promise.all(
       allBlogs.map(async (blog) => {
@@ -99,7 +118,9 @@ app.get('/', async (req, res) => {
       blogs: blogsWithComments,
       success_msg: req.query.success_msg || null,
       error_msg: req.query.error_msg || null,
-      csrfToken: req.csrfToken()
+      csrfToken: req.csrfToken(),
+      currentPage: page,
+      totalPages: Math.ceil(totalBlogs / limit)
     });
   } catch (err) {
     console.error('Error in home route:', err);
@@ -108,7 +129,9 @@ app.get('/', async (req, res) => {
       blogs: [],
       error_msg: 'Failed to load blogs',
       success_msg: null,
-      csrfToken: req.csrfToken()
+      csrfToken: req.csrfToken(),
+      currentPage: 1,
+      totalPages: 1
     });
   }
 });
@@ -206,7 +229,7 @@ app.get('/search/autocomplete', async (req, res) => {
 });
 
 // Routes
-app.use('/user', userRoute);
+app.use('/user', loginLimiter, userRoute);
 app.use('/blog', createBlogLimiter, blogRoute);
 app.use('/comment', commentRoute);
 app.use('/profile', profileRoute);
@@ -230,7 +253,7 @@ app.use((err, req, res, next) => {
 
 // Global Error Handler
 app.use((err, req, res, next) => {
-  console.error('Global error:', err);
+  console.error('Global error:', err.message);
   res.status(500).render('error', {
     user: req.user || null,
     error_msg: 'An unexpected error occurred. Please try again later.',
