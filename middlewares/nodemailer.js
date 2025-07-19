@@ -1,25 +1,21 @@
-const nodemailer = require("nodemailer");
+// middlewares/nodemailer.js
+const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER, // vishantvelip92@gmail.com
-    pass: process.env.EMAIL_PASS, // asuw oiai otqs zcxz
-  },
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
 });
 
-const sendEmail = async ({ to, subject, html }) => {
+const sendEmail = async (options) => {
   try {
-    await transporter.sendMail({
-      from: `"Blogify" <${process.env.EMAIL_USER}>`,
-      to,
-      subject,
-      html,
-    });
-    console.log(`Email sent to ${to}`);
-  } catch (error) {
-    console.error("Error sending email:", error);
-    throw new Error("Failed to send email");
+    await transporter.sendMail(options);
+    console.log(`Email sent to ${options.to}`);
+  } catch (err) {
+    console.error('Error sending email:', err);
+    throw err;
   }
 };
 
