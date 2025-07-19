@@ -1,71 +1,56 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title><%= blog.title %> | Blogify</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-  <style>
-    body{margin:0;background:#1a2634;color:#ecf0f1;font-family:Arial}
-    .container{max-width:800px;margin:2rem auto;padding:1rem}
-    .cover{max-width:100%;border-radius:8px}
-    .meta{display:flex;align-items:center;gap:.5rem;margin:.5rem 0;font-size:.9rem;color:#7f8c8d}
-    .meta img{width:30px;height:30px;border-radius:50%}
-    .actions{margin:1rem 0}
-    .btn{padding:.5rem 1rem;border:none;border-radius:4px;background:#3498db;color:#fff;cursor:pointer;margin-right:.5rem}
-    .comment{background:#2c3e50;padding:1rem;border-radius:6px;margin-bottom:.7rem}
-    .comment img{width:30px;height:30px;border-radius:50%;vertical-align:middle;margin-right:.5rem}
-    textarea{width:100%;padding:.7rem;border:1px solid #34495e;border-radius:4px;background:#34495e;color:#ecf0f1;resize:vertical}
-  </style>
-</head>
-<body>
-<%- include('partials/header', { user }) %>
-<div class="container">
-  <% if(success_msg){ %><p style="color:#27ae60"><%= success_msg %></p><% } %>
-  <% if(error_msg){ %><p style="color:#e74c3c"><%= error_msg %></p><% } %>
+<%- include('partials/head') %>
+<%- include('partials/nav') %>
 
-  <h1><%= blog.title %></h1>
-  <% if(blog.coverImage){ %><img class="cover" src="<%= blog.coverImage %>" alt="cover"><% } %>
-  <div class="meta">
-    <img src="<%= blog.createdBy.profileImageURL %>">
-    <a href="/profile/<%= blog.createdBy._id %>"><%= blog.createdBy.fullname %></a>
-    <span><%= moment(blog.createdAt).fromNow() %></span>
-  </div>
-  <div><%= blog.body %></div>
-
-  <div class="actions">
-    <% if(user){ %>
-      <form action="/blog/<%= blog._id %>/like" method="POST" style="display:inline">
-        <button class="btn <%= blog.likes.includes(user._id)?'liked':'' %>" style="background:<%= blog.likes.includes(user._id)?'#e74c3c':'#3498db' %>">
-          <i class="fas <%= blog.likes.includes(user._id)?'fa-heart':'fa-heart-broken' %>"></i> <%= blog.likes.includes(user._id)?'Unlike':'Like' %> (<%= blog.likes.length %>)
-        </button>
-      </form>
-      <% if(user._id.toString()===blog.createdBy._id.toString()){ %>
-        <form action="/blog/<%= blog._id %>?_method=DELETE" method="POST" onsubmit="return confirm('Delete this blog?')">
-          <button class="btn" style="background:#e74c3c">Delete</button>
+<article>
+  <img src="<%= blog.coverImage || '/images/default-cover.jpg' %>" alt="" style="width:100%;max-height:400px;object-fit:cover">
+  <div class="container" style="max-width:800px;margin:auto;padding:2rem 1rem">
+    <h1 style="font-size:2rem;margin-bottom:.5rem"><%= blog.title %></h1>
+    <div class="flex" style="margin-bottom:1.5rem">
+      <img src="<%= blog.createdBy.profileImageURL %>" class="avatar">
+      <div>
+        <b><%= blog.createdBy.fullname %></b><br>
+        <small style="color:var(--text-soft)"><%= moment(blog.createdAt).format('MMM Do, YYYY') %></small>
+      </div>
+      <% if(user && user._id.toString() !== blog.createdBy._id.toString()){ %>
+        <form action="/blog/<%= blog._id %>/like" method="post" style="margin-left:auto">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn-icon" title="Like">❤️ <%= blog.likes.length %></button>
         </form>
       <% } %>
-    <% } %>
-  </div>
-
-  <h3>Comments</h3>
-  <% comments.forEach(c=>{ %>
-    <div class="comment">
-      <img src="<%= c.createdBy.profileImageURL %>">
-      <strong><%= c.createdBy.fullname %></strong>: <%= c.content %>
-      <br><small><%= moment(c.createdAt).fromNow() %></small>
-      <% if(user && user._id.toString()===c.createdBy._id.toString()){ %>
-        <form action="/comment/<%= c._id %>?_method=DELETE&blogId=<%= blog._id %>" method="POST" style="display:inline"><button class="btn">Delete</button></form>
-      <% } %>
     </div>
-  <% }) %>
 
-  <% if(user){ %>
-    <form action="/comment/<%= blog._id %>" method="POST">
-      <textarea name="content" placeholder="Add a comment…" required></textarea>
-      <button class="btn">Post Comment</button>
-    </form>
-  <% }else{ %><p>Sign in to comment.</p><% } %>
-</div>
-</body>
-</html>
+    <div class="prose" style="word-break:break-word"><%- blog.body %></div>
+
+    <!-- Comments -->
+    <h3 style="margin:2rem 0 1rem">Comments</h3>
+    <% if(user){ %>
+      <form action="/comment/<%= blog._id %>" method="post">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <textarea name="content" rows="3" placeholder="Write a comment…" required style="width:100%;padding:.5rem;border-radius:var(--radius);border:1px solid var(--border)"></textarea>
+        <button class="btn btn-primary" style="margin-top:.5rem">Post</button>
+      </form>
+    <% } %>
+    <div style="margin-top:1rem">
+      <% comments.forEach(c=>{ %>
+        <div class="card" style="margin-bottom:1rem">
+          <div class="flex">
+            <img src="<%= c.createdBy.profileImageURL %>" class="avatar">
+            <div>
+              <b><%= c.createdBy.fullname %></b>
+              <small style="color:var(--text-soft)"><%= moment(c.createdAt).fromNow() %></small>
+            </div>
+          </div>
+          <p style="margin:.5rem 0"><%= c.content %></p>
+          <small>❤️ <%= c.likes.length %></small>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</article>
+
+<%- include('partials/toast') %>
+<script>
+const url=new URLSearchParams(location.search);
+if(url.get('success_msg')) toast(url.get('success_msg'),'success');
+if(url.get('error_msg')) toast(url.get('error_msg'),'error');
+</script>
