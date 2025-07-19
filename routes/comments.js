@@ -9,12 +9,19 @@ router.post("/:blogId", async (req, res) => {
     if (!req.user) {
       return res.redirect(`/blog/${req.params.blogId}?error_msg=Please log in to add a comment`);
     }
+    const { content, parentCommentId } = req.body;
+    if (!content?.trim()) {
+      return res.redirect(`/blog/${req.params.blogId}?error_msg=Comment content is required`);
+    }
+
     await Comment.create({
-      content: req.body.content,
+      content,
       blogId: req.params.blogId,
       createdBy: req.user._id,
+      parentCommentId: parentCommentId || null,
       likes: [],
     });
+
     return res.redirect(`/blog/${req.params.blogId}?success_msg=Comment added successfully`);
   } catch (err) {
     console.error("Error adding comment:", err);
@@ -32,7 +39,7 @@ router.delete("/:commentId", async (req, res) => {
     if (!req.user || comment.createdBy.toString() !== req.user._id.toString()) {
       return res.redirect(`/blog/${comment.blogId}?error_msg=Unauthorized to delete this comment`);
     }
-    await Comment.findByIdAndDelete(req.params.commentId);
+    await Comment.deleteMany({ $or: [{ _id: req.params.commentId }, { parentCommentId: req.params.commentId }] });
     return res.redirect(`/blog/${comment.blogId}?success_msg=Comment deleted successfully`);
   } catch (err) {
     console.error("Error deleting comment:", err);
