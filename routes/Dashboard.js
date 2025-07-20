@@ -9,21 +9,10 @@ const { createTokenForUser } = require("../services/authentication");
 
 const router = Router();
 
-// Utility to render dashboard
-const renderDashboard = (res, user, users, messages = {}) =>
-  res.render("dashboard", {
-    user,
-    users: users || [],
-    success_msg: messages.success_msg || null,
-    error_msg: messages.error_msg || null,
-  });
-
-// GET /dashboard
+// GET /dashboard  – list/search users
 router.get("/", async (req, res) => {
   try {
-    if (!req.user || req.user.role !== "ADMIN") {
-      return res.redirect("/user/signin?error_msg=Admin access required");
-    }
+    if (!req.user) return res.redirect("/user/signin?error_msg=Please sign in");
 
     const { q } = req.query;
     const users = q
@@ -35,22 +24,22 @@ router.get("/", async (req, res) => {
         }).sort({ fullname: 1 })
       : await User.find().sort({ fullname: 1 });
 
-    renderDashboard(res, req.user, users, {
-      success_msg: req.query.success_msg,
-      error_msg: req.query.error_msg,
+    res.render("dashboard", {
+      user: req.user,
+      users,
+      success_msg: req.query.success_msg || null,
+      error_msg: req.query.error_msg || null,
     });
   } catch (err) {
-    console.error("Error loading dashboard:", err);
-    renderDashboard(res, req.user, [], { error_msg: "Failed to load users" });
+    console.error(err);
+    res.redirect("/?error_msg=Dashboard load failed");
   }
 });
 
-// POST /dashboard/update/:id
+// POST /dashboard/update/:id  – update any user
 router.post("/update/:id", cloudinaryUpload.single("profileImage"), async (req, res) => {
   try {
-    if (!req.user || req.user.role !== "ADMIN") {
-      return res.redirect("/user/signin?error_msg=Admin access required");
-    }
+    if (!req.user) return res.redirect("/user/signin");
 
     const { id } = req.params;
     const { fullname, email, password } = req.body;
@@ -67,75 +56,62 @@ router.post("/update/:id", cloudinaryUpload.single("profileImage"), async (req, 
 
     await User.findByIdAndUpdate(id, update);
 
+    // refresh token if editing self
     if (id === req.user._id.toString()) {
-      const updatedUser = await User.findById(id);
-      const token = createTokenForUser(updatedUser);
-      res.cookie("token", token, { httpOnly: true });
+      const updated = await User.findById(id);
+      res.cookie("token", createTokenForUser(updated), { httpOnly: true });
     }
 
-    return res.redirect("/dashboard?success_msg=User updated");
+    res.redirect("/dashboard?success_msg=User updated");
   } catch (err) {
-    console.error("Error updating user:", err);
-    return res.redirect("/dashboard?error_msg=Failed to update user");
+    console.error(err);
+    res.redirect("/dashboard?error_msg=Update failed");
   }
 });
 
-// DELETE /dashboard/delete/:id
+// DELETE /dashboard/delete/:id  – delete any user
 router.delete("/delete/:id", async (req, res) => {
   try {
-    if (!req.user || req.user.role !== "ADMIN") {
-      return res.redirect("/user/signin?error_msg=Admin access required");
-    }
+    if (!req.user) return res.redirect("/user/signin");
 
     const { id } = req.params;
-    if (id === req.user._id.toString()) {
-      return res.redirect("/dashboard?error_msg=Cannot delete your own account");
-    }
-
     await Promise.all([
       User.findByIdAndDelete(id),
       Blog.deleteMany({ createdBy: id }),
       Comment.deleteMany({ createdBy: id }),
     ]);
-
-    return res.redirect("/dashboard?success_msg=User deleted");
+    res.redirect("/dashboard?success_msg=User deleted");
   } catch (err) {
-    console.error("Error deleting user:", err);
-    return res.redirect("/dashboard?error_msg=Failed to delete user");
+    console.error(err);
+    res.redirect("/dashboard?error_msg=Delete failed");
   }
 });
 
-// DELETE /dashboard/delete-post/:id
+// DELETE /dashboard/delete-post/:id  – delete any blog
 router.delete("/delete-post/:id", async (req, res) => {
   try {
-    if (!req.user || req.user.role !== "ADMIN") {
-      return res.redirect("/user/signin?error_msg=Admin access required");
-    }
+    if (!req.user) return res.redirect("/user/signin");
 
     await Promise.all([
       Blog.findByIdAndDelete(req.params.id),
       Comment.deleteMany({ blogId: req.params.id }),
     ]);
-
-    return res.redirect("/dashboard?success_msg=Blog deleted");
+    res.redirect("/dashboard?success_msg=Blog deleted");
   } catch (err) {
-    console.error("Error deleting blog:", err);
-    return res.redirect("/dashboard?error_msg=Failed to delete blog");
+    console.error(err);
+    res.redirect("/dashboard?error_msg=Delete failed");
   }
 });
 
-// DELETE /dashboard/delete-comment/:id
+// DELETE /dashboard/delete-comment/:id  – delete any comment
 router.delete("/delete-comment/:id", async (req, res) => {
   try {
-    if (!req.user || req.user.role !== "ADMIN") {
-      return res.redirect("/user/signin?error_msg=Admin access required");
-    }
-
+    if (!req.user) return res.redirect("/user/signin");
     await Comment.findByIdAndDelete(req.params.id);
-    return res.redirect("/dashboard?success_msg=Comment deleted");
+    res.redirect("/dashboard?success_msg=Comment deleted");
   } catch (err) {
-    console.error("Error deleting comment:", err);
-    return res.redirect("/dashboard?error_msg=Failed to delete comment");
+    console.error(err);
+    res.redirect("/dashboard?error_msg=Delete failed");
   }
 });
 
