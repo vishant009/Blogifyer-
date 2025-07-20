@@ -279,6 +279,7 @@
         <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
         <% if (user) { %>
           <li><a href="/blog/addBlog"><i class="fas fa-plus"></i> Add Blog</a></li>
+          <li><a href="/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
         <% } else { %>
           <li><a href="/user/signin"><i class="fas fa-sign-in-alt"></i> Sign In</a></li>
           <li><a href="/user/signup"><i class="fas fa-user-plus"></i> Sign Up</a></li>
@@ -295,9 +296,6 @@
             <a href="/profile"><i class="fas fa-user"></i> Profile</a>
             <a href="/notification"><i class="fas fa-bell"></i> Notifications</a>
             <a href="/settings"><i class="fas fa-cog"></i> Settings</a>
-            <% if (user.role === 'ADMIN') { %>
-              <a href="/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-            <% } %>
             <a href="/user/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
           </div>
         </div>
