@@ -244,6 +244,18 @@
       </tbody>
     </table>
 
+    <!-- Admin Password Verification Modal -->
+    <div id="adminPasswordModal" class="modal" style="display: <%= showPasswordPopup ? 'flex' : 'none' %>;">
+      <div class="modal-content">
+        <h2><i class="fas fa-lock"></i> Admin Password Verification</h2>
+        <form action="/dashboard/verify-admin" method="POST">
+          <input type="password" name="adminPassword" placeholder="Enter admin password" required>
+          <button type="submit"><i class="fas fa-check"></i> Verify</button>
+          <button type="button" class="close" onclick="window.location.href='/user/signin'"><i class="fas fa-times"></i> Cancel</button>
+        </form>
+      </div>
+    </div>
+
     <!-- Edit User Modal -->
     <div id="editModal" class="modal">
       <div class="modal-content">
@@ -279,7 +291,7 @@
   </div>
 
   <script>
-    // Modal handling
+    // Modal handling for edit user
     function openEditModal(userId, fullname, email) {
       document.getElementById('editModal').style.display = 'flex';
       document.getElementById('editForm').action = `/dashboard/update/${userId}?_method=POST`;
@@ -287,10 +299,11 @@
       document.getElementById('editEmail').value = email;
     }
 
-    function CLOSEdITmODAL() {
+    function closeEditModal() {
       document.getElementById('editModal').style.display = 'none';
     }
 
+    // Modal handling for posts
     function showUserPosts(userId) {
       fetch(`/api/user/${userId}/posts`)
         .then(response => response.json())
@@ -313,6 +326,11 @@
         });
     }
 
+    function closePostsModal() {
+      document.getElementById('postsModal').style.display = 'none';
+    }
+
+    // Modal handling for comments
     function showUserComments(userId) {
       fetch(`/api/user/${userId}/comments`)
         .then(response => response.json())
@@ -333,10 +351,6 @@
         .catch(err => {
           alert('Failed to load comments');
         });
-    }
-
-    function closePostsModal() {
-      document.getElementById('postsModal').style.display = 'none';
     }
 
     function closeCommentsModal() {
