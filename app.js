@@ -15,7 +15,7 @@ const notificationRoute = require("./routes/notification");
 const { checkForAuthenticationCookie } = require("./middlewares/auth");
 
 const dashboardRoute = require("./routes/Dashboard");
-app.use("/dashboard", dashboardRoute);
+
 
 
 
@@ -153,6 +153,7 @@ app.use("/comment", commentRoute);
 app.use("/profile", profileRoute);
 app.use("/settings", settingsRoute);
 app.use("/notification", notificationRoute);
+app.use("/dashboard", dashboardRoute);
 
 // Start Server
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
