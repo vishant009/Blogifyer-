@@ -25,12 +25,13 @@ const renderDashboard = (res, user, users, showPasswordPopup = false, messages =
 // GET /dashboard - Display all users with search functionality
 router.get("/", async (req, res) => {
   try {
-    if (!req.user || req.user.role !== "ADMIN") {
-      return res.redirect("/user/signin?error_msg=Admin access required");
+    // Check if user is authenticated
+    if (!req.user) {
+      return res.redirect("/user/signin?error_msg=Please sign in to access the dashboard");
     }
 
-    // Check if admin password has been verified in session
-    if (!req.session.adminPasswordVerified) {
+    // For admins, check if password has been verified
+    if (req.user.role === "ADMIN" && !req.session.adminPasswordVerified) {
       return renderDashboard(res, req.user, [], true, {
         error_msg: req.query.error_msg || "Please enter the admin password",
       });
@@ -60,7 +61,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// POST /dashboard/verify-admin - Verify admin password
+// POST /dashboard/verify-admin - Verify admin password (for admins only)
 router.post("/verify-admin", async (req, res) => {
   try {
     if (!req.user || req.user.role !== "ADMIN") {
@@ -85,7 +86,7 @@ router.post("/verify-admin", async (req, res) => {
   }
 });
 
-// POST /dashboard/update/:id - Update user profile (name, email, password, profile image)
+// POST /dashboard/update/:id - Update user profile (admin only)
 router.post("/update/:id", cloudinaryUpload.single("profileImage"), async (req, res) => {
   try {
     if (!req.user || req.user.role !== "ADMIN" || !req.session.adminPasswordVerified) {
@@ -146,7 +147,7 @@ router.post("/update/:id", cloudinaryUpload.single("profileImage"), async (req, 
   }
 });
 
-// DELETE /dashboard/delete/:id - Delete a user
+// DELETE /dashboard/delete/:id - Delete a user (admin only)
 router.delete("/delete/:id", async (req, res) => {
   try {
     if (!req.user || req.user.role !== "ADMIN" || !req.session.adminPasswordVerified) {
@@ -174,7 +175,7 @@ router.delete("/delete/:id", async (req, res) => {
   }
 });
 
-// DELETE /dashboard/delete-post/:id - Delete a blog post
+// DELETE /dashboard/delete-post/:id - Delete a blog post (admin only)
 router.delete("/delete-post/:id", async (req, res) => {
   try {
     if (!req.user || req.user.role !== "ADMIN" || !req.session.adminPasswordVerified) {
@@ -196,7 +197,7 @@ router.delete("/delete-post/:id", async (req, res) => {
   }
 });
 
-// DELETE /dashboard/delete-comment/:id - Delete a comment
+// DELETE /dashboard/delete-comment/:id - Delete a comment (admin only)
 router.delete("/delete-comment/:id", async (req, res) => {
   try {
     if (!req.user || req.user.role !== "ADMIN" || !req.session.adminPasswordVerified) {
