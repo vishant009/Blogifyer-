@@ -8,11 +8,15 @@ const { createTokenForUser } = require("../services/authentication");
 
 const router = Router();
 
+// Hardcoded admin password (insecure, for demonstration only)
+const ADMIN_PASSWORD = "adminpassword123";
+
 // Utility to render dashboard with defaults
-const renderDashboard = (res, user, users, messages = {}) => {
+const renderDashboard = (res, user, users, showPasswordPopup = false, messages = {}) => {
   return res.render("dashboard", {
     user: user || null,
     users: users || [],
+    showPasswordPopup,
     success_msg: messages.success_msg || null,
     error_msg: messages.error_msg || null,
   });
@@ -23,6 +27,13 @@ router.get("/", async (req, res) => {
   try {
     if (!req.user || req.user.role !== "ADMIN") {
       return res.redirect("/user/signin?error_msg=Admin access required");
+    }
+
+    // Check if admin password has been verified in session
+    if (!req.session.adminPasswordVerified) {
+      return renderDashboard(res, req.user, [], true, {
+        error_msg: req.query.error_msg || "Please enter the admin password",
+      });
     }
 
     const { q } = req.query;
@@ -39,20 +50,45 @@ router.get("/", async (req, res) => {
       users = await User.find().sort({ fullname: 1 });
     }
 
-    renderDashboard(res, req.user, users, {
+    renderDashboard(res, req.user, users, false, {
       success_msg: req.query.success_msg,
       error_msg: req.query.error_msg,
     });
   } catch (err) {
     console.error("Error loading dashboard:", err);
-    renderDashboard(res, req.user, [], { error_msg: "Failed to load users" });
+    renderDashboard(res, req.user, [], false, { error_msg: "Failed to load users" });
+  }
+});
+
+// POST /dashboard/verify-admin - Verify admin password
+router.post("/verify-admin", async (req, res) => {
+  try {
+    if (!req.user || req.user.role !== "ADMIN") {
+      return res.redirect("/user/signin?error_msg=Admin access required");
+    }
+
+    const { adminPassword } = req.body;
+    if (adminPassword !== ADMIN_PASSWORD) {
+      return renderDashboard(res, req.user, [], true, {
+        error_msg: "Incorrect admin password",
+      });
+    }
+
+    // Set session flag to indicate password verification
+    req.session.adminPasswordVerified = true;
+    return res.redirect("/dashboard?success_msg=Admin access granted");
+  } catch (err) {
+    console.error("Error verifying admin password:", err);
+    return renderDashboard(res, req.user, [], true, {
+      error_msg: "Failed to verify admin password",
+    });
   }
 });
 
 // POST /dashboard/update/:id - Update user profile (name, email, password, profile image)
 router.post("/update/:id", cloudinaryUpload.single("profileImage"), async (req, res) => {
   try {
-    if (!req.user || req.user.role !== "ADMIN") {
+    if (!req.user || req.user.role !== "ADMIN" || !req.session.adminPasswordVerified) {
       return res.redirect("/user/signin?error_msg=Admin access required");
     }
 
@@ -113,7 +149,7 @@ router.post("/update/:id", cloudinaryUpload.single("profileImage"), async (req, 
 // DELETE /dashboard/delete/:id - Delete a user
 router.delete("/delete/:id", async (req, res) => {
   try {
-    if (!req.user || req.user.role !== "ADMIN") {
+    if (!req.user || req.user.role !== "ADMIN" || !req.session.adminPasswordVerified) {
       return res.redirect("/user/signin?error_msg=Admin access required");
     }
 
@@ -141,7 +177,7 @@ router.delete("/delete/:id", async (req, res) => {
 // DELETE /dashboard/delete-post/:id - Delete a blog post
 router.delete("/delete-post/:id", async (req, res) => {
   try {
-    if (!req.user || req.user.role !== "ADMIN") {
+    if (!req.user || req.user.role !== "ADMIN" || !req.session.adminPasswordVerified) {
       return res.redirect("/user/signin?error_msg=Admin access required");
     }
 
@@ -163,7 +199,7 @@ router.delete("/delete-post/:id", async (req, res) => {
 // DELETE /dashboard/delete-comment/:id - Delete a comment
 router.delete("/delete-comment/:id", async (req, res) => {
   try {
-    if (!req.user || req.user.role !== "ADMIN") {
+    if (!req.user || req.user.role !== "ADMIN" || !req.session.adminPasswordVerified) {
       return res.redirect("/user/signin?error_msg=Admin access required");
     }
 
