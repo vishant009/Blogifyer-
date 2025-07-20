@@ -1,361 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard - Blogify</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <meta charset="UTF-8" />
+  <title>Dashboard – Blogify</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: Arial, sans-serif;
-    }
-    body {
-      background-color: #f4f4f9;
-      color: #333;
-    }
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    .header h1 {
-      font-size: 2rem;
-      color: #2c3e50;
-    }
-    .search-bar {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .search-bar input {
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      width: 250px;
-      font-size: 1rem;
-    }
-    .search-bar button {
-      padding: 10px 15px;
-      background-color: #3498db;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .search-bar button:hover {
-      background-color: #2980b9;
-    }
-    .message {
-      padding: 10px;
-      margin-bottom: 20px;
-      border-radius: 5px;
-      text-align: center;
-    }
-    .success {
-      background-color: #dff0d8;
-      color: #3c763d;
-    }
-    .error {
-      background-color: #f2dede;
-      color: #a94442;
-    }
-    .user-table {
-      width: 100%;
-      border-collapse: collapse;
-      background-color: white;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    .user-table th, .user-table td {
-      padding: 12px;
-      text-align: left;
-      border-bottom: 1px solid #ddd;
-    }
-    .user-table th {
-      background-color: #3498db;
-      color: white;
-    }
-    .user-table tr:hover {
-      background-color: #f9f9f9;
-    }
-    .user-image {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      object-fit: cover;
-    }
-    .dropdown {
-      position: relative;
-      display: inline-block;
-    }
-    .dropdown-toggle {
-      padding: 8px 12px;
-      background-color: #3498db;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .dropdown-toggle:hover {
-      background-color: #2980b9;
-    }
-    .dropdown-menu {
-      display: none;
-      position: absolute;
-      background-color: white;
-      min-width: 160px;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-      z-index: 1;
-      border-radius: 5px;
-      right: 0;
-    }
-    .dropdown-menu a, .dropdown-menu button {
-      color: #333;
-      padding: 12px 16px;
-      text-decoration: none;
-      display: block;
-      background: none;
-      border: none;
-      width: 100%;
-      text-align: left;
-      cursor: pointer;
-    }
-    .dropdown-menu a:hover, .dropdown-menu button:hover {
-      background-color: #f1f1f1;
-    }
-    .dropdown:hover .dropdown-menu {
-      display: block;
-    }
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0,0,0,0.5);
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-    .modal-content {
-      background-color: white;
-      padding: 20px;
-      border-radius: 5px;
-      width: 90%;
-      max-width: 500px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    }
-    .modal-content h2 {
-      margin-bottom: 20px;
-      color: #2c3e50;
-    }
-    .modal-content form {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-    .modal-content input, .modal-content textarea {
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      font-size: 1rem;
-    }
-    .modal-content button {
-      padding: 10px;
-      background-color: #3498db;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .modal-content button:hover {
-      background-color: #2980b9;
-    }
-    .modal-content .close {
-      background-color: #e74c3c;
-    }
-    .modal-content .close:hover {
-      background-color: #c0392b;
-    }
+    body{font-family:Arial,Helvetica,sans-serif;background:#f4f4f9;color:#333;margin:0}
+    .container{max-width:1200px;margin:20px auto;padding:0 20px}
+    .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+    .header h1{font-size:2rem;color:#2c3e50}
+    .search-bar{display:flex;gap:10px}
+    .search-bar input, .search-bar button{padding:8px 12px;font-size:1rem}
+    .search-bar button{background:#3498db;color:#fff;border:none;border-radius:4px;cursor:pointer}
+    .message{padding:10px;margin-bottom:15px;border-radius:4px;text-align:center}
+    .success{background:#dff0d8;color:#3c763d}
+    .error{background:#f2dede;color:#a94442}
+    table{width:100%;border-collapse:collapse;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.1)}
+    th,td{padding:12px;text-align:left;border-bottom:1px solid #ddd}
+    th{background:#3498db;color:#fff}
+    img.user-img{width:40px;height:40px;border-radius:50%;object-fit:cover}
+    .dropdown{position:relative;display:inline-block}
+    .dropdown-toggle{background:#3498db;color:#fff;border:none;padding:6px 10px;border-radius:4px;cursor:pointer}
+    .dropdown-menu{display:none;position:absolute;background:#fff;min-width:160px;box-shadow:0 8px 16px rgba(0,0,0,.2);z-index:1}
+    .dropdown:hover .dropdown-menu{display:block}
+    .dropdown-menu button, .dropdown-menu a{display:block;width:100%;padding:8px 12px;border:none;background:none;text-align:left;cursor:pointer;color:#333}
+    .dropdown-menu button:hover, .dropdown-menu a:hover{background:#f1f1f1}
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1><i class="fas fa-tachometer-alt"></i> Admin Dashboard</h1>
-      <div class="search-bar">
-        <form action="/dashboard" method="GET">
-          <input type="text" name="q" placeholder="Search users by name or email" value="<%= typeof query !== 'undefined' ? query : '' %>">
-          <button type="submit"><i class="fas fa-search"></i> Search</button>
-        </form>
-      </div>
-    </div>
-
-    <% if (success_msg) { %>
-      <div class="message success"><i class="fas fa-check-circle"></i> <%= success_msg %></div>
-    <% } %>
-    <% if (error_msg) { %>
-      <div class="message error"><i class="fas fa-exclamation-circle"></i> <%= error_msg %></div>
-    <% } %>
-
-    <table class="user-table">
-      <thead>
-        <tr>
-          <th><i class="fas fa-user"></i> Name</th>
-          <th><i class="fas fa-envelope"></i> Email</th>
-          <th><i class="fas fa-image"></i> Profile Image</th>
-          <th><i class="fas fa-cogs"></i> Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% users.forEach(user => { %>
-          <tr>
-            <td><%= user.fullname %></td>
-            <td><%= user.email %></td>
-            <td>
-              <img src="<%= user.profileImageURL || '/images/default.png' %>" alt="Profile Image" class="user-image">
-            </td>
-            <td>
-              <div class="dropdown">
-                <button class="dropdown-toggle"><i class="fas fa-ellipsis-v"></i> Actions</button>
-                <div class="dropdown-menu">
-                  <button onclick="openEditModal('<%= user._id %>', '<%= user.fullname %>', '<%= user.email %>')">
-                    <i class="fas fa-edit"></i> Edit Profile
-                  </button>
-                  <form action="/dashboard/delete/<%= user._id %>?_method=DELETE" method="POST" style="display:inline;">
-                    <button type="submit"><i class="fas fa-trash"></i> Delete User</button>
-                  </form>
-                  <button onclick="showUserPosts('<%= user._id %>')"><i class="fas fa-blog"></i> View Posts</button>
-                  <button onclick="showUserComments('<%= user._id %>')"><i class="fas fa-comment"></i> View Comments</button>
-                </div>
-              </div>
-            </td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
-
-    <!-- Admin Password Verification Modal -->
-    <div id="adminPasswordModal" class="modal" style="display: <%= showPasswordPopup ? 'flex' : 'none' %>;">
-      <div class="modal-content">
-        <h2><i class="fas fa-lock"></i> Admin Password Verification</h2>
-        <form action="/dashboard/verify-admin" method="POST">
-          <input type="password" name="adminPassword" placeholder="Enter admin password" required>
-          <button type="submit"><i class="fas fa-check"></i> Verify</button>
-          <button type="button" class="close" onclick="window.location.href='/user/signin'"><i class="fas fa-times"></i> Cancel</button>
-        </form>
-      </div>
-    </div>
-
-    <!-- Edit User Modal -->
-    <div id="editModal" class="modal">
-      <div class="modal-content">
-        <h2><i class="fas fa-user-edit"></i> Edit User</h2>
-        <form id="editForm" action="" method="POST" enctype="multipart/form-data">
-          <input type="text" name="fullname" id="editFullname" placeholder="Full Name" required>
-          <input type="email" name="email" id="editEmail" placeholder="Email" required>
-          <input type="password" name="password" id="editPassword" placeholder="New Password (optional)">
-          <input type="file" name="profileImage" accept="image/*">
-          <button type="submit"><i class="fas fa-save"></i> Save Changes</button>
-          <button type="button" class="close" onclick="closeEditModal()"><i class="fas fa-times"></i> Cancel</button>
-        </form>
-      </div>
-    </div>
-
-    <!-- Posts Modal -->
-    <div id="postsModal" class="modal">
-      <div class="modal-content">
-        <h2><i class="fas fa-blog"></i> User Posts</h2>
-        <div id="postsList"></div>
-        <button class="close" onclick="closePostsModal()"><i class="fas fa-times"></i> Close</button>
-      </div>
-    </div>
-
-    <!-- Comments Modal -->
-    <div id="commentsModal" class="modal">
-      <div class="modal-content">
-        <h2><i class="fas fa-comment"></i> User Comments</h2>
-        <div id="commentsList"></div>
-        <button class="close" onclick="closeCommentsModal()"><i class="fas fa-times"></i> Close</button>
-      </div>
-    </div>
+<div class="container">
+  <div class="header">
+    <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+    <form class="search-bar" action="/dashboard" method="GET">
+      <input type="text" name="q" placeholder="Search users…" value="<%= typeof q !== 'undefined' ? q : '' %>">
+      <button><i class="fas fa-search"></i> Search</button>
+    </form>
   </div>
 
-  <script>
-    // Modal handling for edit user
-    function openEditModal(userId, fullname, email) {
-      document.getElementById('editModal').style.display = 'flex';
-      document.getElementById('editForm').action = `/dashboard/update/${userId}?_method=POST`;
-      document.getElementById('editFullname').value = fullname;
-      document.getElementById('editEmail').value = email;
-    }
+  <% if (success_msg) { %>
+    <div class="message success"><i class="fas fa-check-circle"></i> <%= success_msg %></div>
+  <% } %>
+  <% if (error_msg) { %>
+    <div class="message error"><i class="fas fa-exclamation-circle"></i> <%= error_msg %></div>
+  <% } %>
 
-    function closeEditModal() {
-      document.getElementById('editModal').style.display = 'none';
-    }
-
-    // Modal handling for posts
-    function showUserPosts(userId) {
-      fetch(`/api/user/${userId}/posts`)
-        .then(response => response.json())
-        .then(posts => {
-          const postsList = document.getElementById('postsList');
-          postsList.innerHTML = posts.length > 0 
-            ? posts.map(post => `
-                <div style="padding:10px;border-bottom:1px solid #ddd;">
-                  <strong>${post.title}</strong>
-                  <form action="/dashboard/delete-post/${post._id}?_method=DELETE" method="POST" style="display:inline;">
-                    <button type="submit" style="color:#e74c3c;"><i class="fas fa-trash"></i> Delete</button>
-                  </form>
-                </div>
-              `).join('')
-            : '<p>No posts found.</p>';
-          document.getElementById('postsModal').style.display = 'flex';
-        })
-        .catch(err => {
-          alert('Failed to load posts');
-        });
-    }
-
-    function closePostsModal() {
-      document.getElementById('postsModal').style.display = 'none';
-    }
-
-    // Modal handling for comments
-    function showUserComments(userId) {
-      fetch(`/api/user/${userId}/comments`)
-        .then(response => response.json())
-        .then(comments => {
-          const commentsList = document.getElementById('commentsList');
-          commentsList.innerHTML = comments.length > 0 
-            ? comments.map(comment => `
-                <div style="padding:10px;border-bottom:1px solid #ddd;">
-                  <p>${comment.content}</p>
-                  <form action="/dashboard/delete-comment/${comment._id}?_method=DELETE" method="POST" style="display:inline;">
-                    <button type="submit" style="color:#e74c3c;"><i class="fas fa-trash"></i> Delete</button>
-                  </form>
-                </div>
-              `).join('')
-            : '<p>No comments found.</p>';
-          document.getElementById('commentsModal').style.display = 'flex';
-        })
-        .catch(err => {
-          alert('Failed to load comments');
-        });
-    }
-
-    function closeCommentsModal() {
-      document.getElementById('commentsModal').style.display = 'none';
-    }
-  </script>
+  <table>
+    <thead>
+      <tr>
+        <th><i class="fas fa-user"></i> Name</th>
+        <th><i class="fas fa-envelope"></i> Email</th>
+        <th><i class="fas fa-image"></i> Avatar</th>
+        <th><i class="fas fa-cogs"></i> Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% users.forEach(u => { %>
+        <tr>
+          <td><%= u.fullname %></td>
+          <td><%= u.email %></td>
+          <td><img src="<%= u.profileImageURL || '/images/default.png' %>" class="user-img"></td>
+          <td>
+            <div class="dropdown">
+              <button class="dropdown-toggle">Actions</button>
+              <div class="dropdown-menu">
+                <form action="/dashboard/update/<%= u._id %>" method="POST" enctype="multipart/form-data">
+                  <input type="text" name="fullname" value="<%= u.fullname %>" required>
+                  <input type="email" name="email" value="<%= u.email %>" required>
+                  <input type="password" name="password" placeholder="New password (optional)">
+                  <input type="file" name="profileImage" accept="image/*">
+                  <button type="submit"><i class="fas fa-save"></i> Save</button>
+                </form>
+                <form action="/dashboard/delete/<%= u._id %>?_method=DELETE" method="POST"
+                      onsubmit="return confirm('Delete this user?');">
+                  <button type="submit"><i class="fas fa-trash"></i> Delete</button>
+                </form>
+              </div>
+            </div>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
 </body>
 </html>
