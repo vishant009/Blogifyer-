@@ -14,6 +14,11 @@ const profileRoute = require("./routes/profile");
 const notificationRoute = require("./routes/notification");
 const { checkForAuthenticationCookie } = require("./middlewares/auth");
 
+const dashboardRoute = require("./routes/Dashboard");
+app.use("/dashboard", dashboardRoute);
+
+
+
 const app = express();
 const PORT = process.env.PORT || 8000;
 
