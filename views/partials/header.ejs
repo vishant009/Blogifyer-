@@ -2,309 +2,96 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Segoe UI', Arial, sans-serif;
+    :root{
+      --bg:#0f0f11;
+      --surface:rgba(255,255,255,.06);
+      --up:rgba(255,255,255,.09);
+      --border:rgba(255,255,255,.12);
+      --accent:#00d2ff;
+      --text:#fff;
+      --soft:#b3b3b3;
+      --radius:12px;
+      --ease:cubic-bezier(.4,0,.2,1);
     }
-
-    :root {
-      --primary-color: #3498db;
-      --secondary-color: #2c3e50;
-      --dark-bg: #1a1a1a;
-      --card-bg: #2a2a2a;
-      --text-primary: #ffffff;
-      --text-secondary: #b0b0b0;
-      --border-color: #404040;
-      --hover-color: #3a3a3a;
-    }
-
-    header {
-      background-color: var(--secondary-color);
-      padding: 1rem;
-      border-bottom: 1px solid var(--border-color);
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-    }
-
-    nav {
-      max-width: 1200px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    nav a.logo {
-      color: var(--primary-color);
-      text-decoration: none;
-      font-size: 1.8rem;
-      font-weight: bold;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: color 0.3s;
-    }
-
-    nav a.logo:hover {
-      color: #2980b9;
-    }
-
-    nav ul.main-nav {
-      list-style: none;
-      display: flex;
-      gap: 2rem;
-      align-items: center;
-    }
-
-    nav ul.main-nav li a {
-      color: var(--text-primary);
-      text-decoration: none;
-      font-size: 1rem;
-      transition: color 0.3s;
-    }
-
-    nav ul.main-nav li a:hover {
-      color: var(--primary-color);
-    }
-
-    nav form {
-      display: flex;
-      gap: 0.5rem;
-      align-items: center;
-    }
-
-    nav form input {
-      padding: 0.5rem 1rem;
-      background-color: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      color: var(--text-primary);
-      font-size: 0.9rem;
-      transition: border-color 0.3s;
-    }
-
-    nav form input:focus {
-      outline: none;
-      border-color: var(--primary-color);
-    }
-
-    nav form button {
-      padding: 0.5rem 1rem;
-      background-color: var(--primary-color);
-      border: none;
-      border-radius: 8px;
-      color: var(--text-primary);
-      cursor: pointer;
-      transition: background-color 0.3s, transform 0.2s;
-    }
-
-    nav form button:hover {
-      background-color: #2980b9;
-      transform: scale(1.05);
-    }
-
-    .hamburger {
-      display: none;
-      font-size: 1.5rem;
-      background: none;
-      border: none;
-      color: var(--text-primary);
-      cursor: pointer;
-      transition: color 0.3s;
-    }
-
-    .hamburger:hover {
-      color: var(--primary-color);
-    }
-
-    .dropdown {
-      position: relative;
-    }
-
-    .dropdown-toggle {
-      background: none;
-      border: none;
-      color: var(--text-primary);
-      font-size: 1rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem;
-      border-radius: 50px;
-      transition: background-color 0.3s;
-    }
-
-    .dropdown-toggle:hover {
-      background-color: var(--hover-color);
-    }
-
-    .dropdown-toggle img {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      object-fit: cover;
-    }
-
-    .dropdown-menu {
-      position: absolute;
-      top: 100%;
-      right: 0;
-      background-color: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-      min-width: 200px;
-      opacity: 0;
-      visibility: hidden;
-      transform: translateY(-10px);
-      transition: all 0.3s ease;
-      z-index: 1001;
-    }
-
-    .dropdown-menu.active {
-      opacity: 1;
-      visibility: visible;
-      transform: translateY(0);
-    }
-
-    .dropdown-menu a {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.75rem 1rem;
-      color: var(--text-primary);
-      text-decoration: none;
-      transition: background-color 0.3s;
-    }
-
-    .dropdown-menu a:hover {
-      background-color: var(--hover-color);
-    }
-
-    @media (max-width: 768px) {
-      nav ul.main-nav {
-        display: none;
-        flex-direction: column;
-        width: 100%;
-        background-color: var(--card-bg);
-        padding: 1rem;
-        position: absolute;
-        top: 60px;
-        left: 0;
-        border-bottom: 1px solid var(--border-color);
-      }
-
-      nav ul.main-nav.active {
-        display: flex;
-      }
-
-      .hamburger {
-        display: block;
-      }
-
-      nav form {
-        width: 100%;
-        margin-top: 1rem;
-      }
-
-      nav form input {
-        flex: 1;
-      }
-
-      .dropdown-menu {
-        width: 100%;
-        right: 0;
-      }
-    }
-
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: var(--dark-bg);
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: var(--border-color);
-      border-radius: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: var(--text-secondary);
+    *{margin:0;padding:0;box-sizing:border-box;font-family:"Segoe UI",system-ui,sans-serif}
+    header{position:sticky;top:0;backdrop-filter:blur(20px);background:var(--surface);border-bottom:1px solid var(--border);z-index:999}
+    .nav{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem}
+    .logo{font-size:1.6rem;font-weight:700;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:.5rem}
+    .nav-links{display:flex;align-items:center;gap:2rem;list-style:none}
+    .nav-links a{color:var(--soft);text-decoration:none;font-size:.95rem;transition:color .2s var(--ease)}
+    .nav-links a:hover{color:var(--accent)}
+    .search-form{display:flex;align-items:center;gap:.5rem}
+    .search-form input{padding:.5rem .75rem;border:1px solid var(--border);border-radius:var(--radius);background:var(--up);color:var(--text);font-size:.9rem}
+    .search-form button{padding:.55rem;border:none;background:var(--accent);color:#fff;border-radius:var(--radius);cursor:pointer}
+    .dropdown{position:relative}
+    .dropdown-toggle{background:transparent;border:none;color:var(--soft);display:flex;align-items:center;gap:.5rem;font-size:.9rem;cursor:pointer}
+    .dropdown-toggle img{width:28px;height:28px;border-radius:50%;object-fit:cover}
+    .dropdown-menu{position:absolute;right:0;top:50px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.5rem 0;min-width:170px;display:none;flex-direction:column}
+    .dropdown-menu a{padding:.6rem 1rem;color:var(--soft);text-decoration:none;display:flex;align-items:center;gap:.5rem}
+    .dropdown-menu a:hover{background:var(--up)}
+    .dropdown:hover .dropdown-menu{display:flex}
+    .hamburger{display:none;font-size:1.4rem;color:var(--soft);background:none;border:none;cursor:pointer}
+    @media(max-width:768px){
+      .nav-links{position:fixed;top:60px;left:0;width:100%;background:var(--surface);flex-direction:column;padding:1rem 0;gap:1rem;transform:translateY(-100%);transition:transform .3s var(--ease);border-bottom:1px solid var(--border)}
+      .nav-links.open{transform:translateY(0)}
+      .hamburger{display:block}
     }
   </style>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const hamburger = document.querySelector('.hamburger');
-      const navMenu = document.querySelector('nav ul.main-nav');
-      const dropdownToggle = document.querySelector('.dropdown-toggle');
-      const dropdownMenu = document.querySelector('.dropdown-menu');
-
-      if (hamburger && navMenu) {
-        hamburger.addEventListener('click', () => {
-          navMenu.classList.toggle('active');
-        });
-      }
-
-      if (dropdownToggle && dropdownMenu) {
-        dropdownToggle.addEventListener('click', () => {
-          dropdownMenu.classList.toggle('active');
-        });
-
-        document.addEventListener('click', (e) => {
-          if (!dropdownToggle.contains(e.target) && !dropdownMenu.contains(e.target)) {
-            dropdownMenu.classList.remove('active');
-          }
-        });
-      }
-    });
-  </script>
 </head>
 <body>
-  <header>
-    <nav>
-      <a href="/" class="logo"><i class="fas fa-blog"></i> Blogify</a>
-      <button class="hamburger"><i class="fas fa-bars"></i></button>
-      <ul class="main-nav">
-        <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
-        <% if (user) { %>
-          <li><a href="/blog/addBlog"><i class="fas fa-plus"></i> Add Blog</a></li>
-          <li><a href="/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-        <% } else { %>
-          <li><a href="/user/signin"><i class="fas fa-sign-in-alt"></i> Sign In</a></li>
-          <li><a href="/user/signup"><i class="fas fa-user-plus"></i> Sign Up</a></li>
-        <% } %>
-      </ul>
-      <% if (user) { %>
-        <div class="dropdown">
-          <button class="dropdown-toggle">
-            <img src="<%= user.profileImageURL %>" alt="Profile" class="profile-avatar">
-            <%= user.fullname %>
-            <i class="fas fa-chevron-down"></i>
-          </button>
-          <div class="dropdown-menu">
-            <a href="/profile"><i class="fas fa-user"></i> Profile</a>
-            <a href="/notification"><i class="fas fa-bell"></i> Notifications</a>
-            <a href="/settings"><i class="fas fa-cog"></i> Settings</a>
-            <a href="/user/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
-          </div>
+<header>
+  <nav class="nav">
+    <a href="/" class="logo"><i class="fas fa-blog"></i> Blogify</a>
+
+  <!-- desktop links -->
+  <ul class="nav-links" id="navLinks">
+    <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
+    <% if (user) { %>
+      <li><a href="/blog/addBlog"><i class="fas fa-plus"></i> Add Blog</a></li>
+      <li><a href="/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+    <% } else { %>
+      <li><a href="/user/signin"><i class="fas fa-sign-in-alt"></i> Sign In</a></li>
+      <li><a href="/user/signup"><i class="fas fa-user-plus"></i> Sign Up</a></li>
+    <% } %>
+  </ul>
+
+  <div style="display:flex;align-items:center;gap:1rem">
+    <!-- search -->
+    <form class="search-form" action="/search" method="GET">
+      <input type="text" name="q" placeholder="Search…" aria-label="Search">
+      <button type="submit"><i class="fas fa-search"></i></button>
+    </form>
+
+    <!-- profile dropdown -->
+    <% if (user) { %>
+      <div class="dropdown">
+        <button class="dropdown-toggle">
+          <img src="<%= user.profileImageURL %>" alt="avatar">
+          <%= user.fullname %>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div class="dropdown-menu">
+          <a href="/profile"><i class="fas fa-user"></i> Profile</a>
+          <a href="/notification"><i class="fas fa-bell"></i> Notifications</a>
+          <a href="/settings"><i class="fas fa-cog"></i> Settings</a>
+          <a href="/user/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
         </div>
-      <% } %>
-      <form action="/search" method="GET">
-        <input type="text" name="q" placeholder="Search users or blogs..." aria-label="Search">
-        <button type="submit"><i class="fas fa-search"></i></button>
-      </form>
-    </nav>
-  </header>
-</body>
-</html>
+      </div>
+    <% } %>
+
+    <!-- hamburger -->
+    <button class="hamburger" id="hamburger"><i class="fas fa-bars"></i></button>
+  </div>
+</nav>
+</header>
+
+<script>
+  const hamburger = document.getElementById('hamburger');
+  const navLinks  = document.getElementById('navLinks');
+  hamburger.addEventListener('click', () => {
+    navLinks.classList.toggle('open');
+  });
+</script>
