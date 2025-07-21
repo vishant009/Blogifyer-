@@ -7,6 +7,9 @@ const crypto = require("crypto");
 
 const router = Router();
 
+// Temporary in-memory store for pending signups
+const pendingSignups = new Map();
+
 // Generate 6-digit code
 const generateCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -53,17 +56,18 @@ router.post("/signup", async (req, res) => {
     }
 
     const verificationCode = generateCode();
-    const user = await User.create({
+    const signupToken = crypto.randomBytes(16).toString("hex");
+
+    // Store user data temporarily
+    pendingSignups.set(signupToken, {
       fullname,
       email,
       password,
-      likedBlogs: [],
-      bio: "",
       verificationCode,
-      verificationCodeExpires: Date.now() + 3600000,
+      verificationCodeExpires: Date.now() + 3600000, // 1 hour expiry
     });
 
-    const verificationUrl = `http://${req.headers.host}/user/verify-email/${user._id}/${verificationCode}`;
+    const verificationUrl = `http://${req.headers.host}/user/verify-email/${signupToken}/${verificationCode}`;
     await sendEmail({
       to: email,
       subject: "Verify Your Blogify Account",
@@ -85,14 +89,14 @@ router.post("/signup", async (req, res) => {
       showVerification: true,
       email,
       fullname,
-      userId: user._id,
+      userId: signupToken,
       verificationCode,
     });
   } catch (error) {
     return res.render("signup", {
       title: "Sign Up",
       user: req.user || null,
-      error: error.message || "Error creating user",
+      error: error.message || "Error during signup",
       success_msg: null,
       showVerification: false,
       email,
@@ -103,17 +107,25 @@ router.post("/signup", async (req, res) => {
 
 // GET /user/verify-email/:id/:code
 router.get("/verify-email/:id/:code", async (req, res) => {
+  const { id: signupToken, code } = req.params;
   try {
-    const user = await User.findById(req.params.id);
-    if (!user) throw new Error("User not found");
-    if (user.isVerified) throw new Error("Email already verified");
-    if (user.verificationCode !== req.params.code) throw new Error("Invalid verification code");
-    if (user.verificationCodeExpires < Date.now()) throw new Error("Verification code expired");
+    const pendingUser = pendingSignups.get(signupToken);
+    if (!pendingUser) throw new Error("Invalid or expired verification request");
+    if (pendingUser.verificationCode !== code) throw new Error("Invalid verification code");
+    if (pendingUser.verificationCodeExpires < Date.now()) throw new Error("Verification code expired");
 
-    user.isVerified = true;
-    user.verificationCode = undefined;
-    user.verificationCodeExpires = undefined;
-    await user.save();
+    // Create user in the database
+    const user = await User.create({
+      fullname: pendingUser.fullname,
+      email: pendingUser.email,
+      password: pendingUser.password,
+      likedBlogs: [],
+      bio: "",
+      isVerified: true,
+    });
+
+    // Clean up pending signup
+    pendingSignups.delete(signupToken);
 
     return res.redirect("/user/signin?success_msg=Email verified successfully");
   } catch (error) {
@@ -125,8 +137,8 @@ router.get("/verify-email/:id/:code", async (req, res) => {
       showVerification: true,
       email: req.query.email || "",
       fullname: req.query.fullname || "",
-      userId: req.params.id,
-      verificationCode: req.params.code,
+      userId: signupToken,
+      verificationCode: code,
     });
   }
 });
@@ -134,19 +146,26 @@ router.get("/verify-email/:id/:code", async (req, res) => {
 // POST /user/verify-email/:id/:code
 router.post("/verify-email/:id/:code", async (req, res) => {
   const { code } = req.body;
-  const { id } = req.params;
+  const { id: signupToken } = req.params;
 
   try {
-    const user = await User.findById(id);
-    if (!user) throw new Error("User not found");
-    if (user.isVerified) throw new Error("Email already verified");
-    if (user.verificationCode !== code) throw new Error("Invalid verification code");
-    if (user.verificationCodeExpires < Date.now()) throw new Error("Verification code expired");
+    const pendingUser = pendingSignups.get(signupToken);
+    if (!pendingUser) throw new Error("Invalid or expired verification request");
+    if (pendingUser.verificationCode !== code) throw new Error("Invalid verification code");
+    if (pendingUser.verificationCodeExpires < Date.now()) throw new Error("Verification code expired");
 
-    user.isVerified = true;
-    user.verificationCode = undefined;
-    user.verificationCodeExpires = undefined;
-    await user.save();
+    // Create user in the database
+    const user = await User.create({
+      fullname: pendingUser.fullname,
+      email: pendingUser.email,
+      password: pendingUser.password,
+      likedBlogs: [],
+      bio: "",
+      isVerified: true,
+    });
+
+    // Clean up pending signup
+    pendingSignups.delete(signupToken);
 
     return res.redirect("/user/signin?success_msg=Email verified successfully");
   } catch (error) {
@@ -158,7 +177,7 @@ router.post("/verify-email/:id/:code", async (req, res) => {
       showVerification: true,
       email: req.query.email || "",
       fullname: req.query.fullname || "",
-      userId: id,
+      userId: signupToken,
       verificationCode: code,
     });
   }
