@@ -6,23 +6,28 @@
   <title>Home | Blogify</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <style>
+    /* ==========  CORE TOKENS  ========== */
     :root {
       --primary-color: #3498db;
       --secondary-color: #2c3e50;
       --success-color: #27ae60;
       --danger-color: #e74c3c;
       --dark-bg: #1a1a1a;
-      --card-bg: #2a2a2a;
+      --card-bg: #242424;
       --text-primary: #ffffff;
       --text-secondary: #b0b0b0;
-      --border-color: #404040;
+      --border-color: #333;
       --hover-color: #3a3a3a;
+      --ease-out: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
     }
 
+    /* ==========  RESET  ========== */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
     body {
-      background-color: var(--dark-bg);
+      background: var(--dark-bg);
       color: var(--text-primary);
-      margin: 0;
       font-family: 'Segoe UI', Arial, sans-serif;
       line-height: 1.6;
     }
@@ -39,9 +44,9 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      color: var(--text-primary);
     }
 
+    /* ==========  ALERTS  ========== */
     .alert {
       padding: 1rem;
       margin-bottom: 1.5rem;
@@ -50,53 +55,50 @@
       align-items: center;
       gap: 0.5rem;
     }
+    .alert-success { background: rgba(39, 174, 96, .15); color: var(--success-color); }
+    .alert-error   { background: rgba(231, 76, 60, .15);  color: var(--danger-color); }
 
-    .alert-success {
-      background-color: rgba(39, 174, 96, 0.1);
-      color: var(--success-color);
-    }
-
-    .alert-error {
-      background-color: rgba(231, 76, 60, 0.1);
-      color: var(--danger-color);
-    }
-
+    /* ==========  BLOG-CARD  ========== */
     .blog-card {
-      background-color: var(--card-bg);
-      border-radius: 12px;
+      background: var(--card-bg);
       border: 1px solid var(--border-color);
+      border-radius: 12px;
       padding: 1.5rem;
       margin-bottom: 2rem;
-      transition: transform 0.3s, box-shadow 0.3s;
+      transition: transform .35s var(--ease-out),
+                  box-shadow .35s var(--ease-out);
+      overflow: hidden;
     }
-
     .blog-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 20px rgba(0,0,0,.45);
     }
 
     .blog-card img {
-      max-width: 100%;
+      width: 100%;
       border-radius: 8px;
       margin-bottom: 1rem;
-      object-fit: cover;
+      transition: transform .5s var(--ease-out);
+      transform-origin: center;
     }
+    .blog-card:hover img { transform: scale(1.04); }
 
     .blog-card h2 a {
       font-size: 1.5rem;
       color: var(--primary-color);
       text-decoration: none;
-      transition: color 0.3s;
+      position: relative;
+      background-image: linear-gradient(var(--primary-color), var(--primary-color));
+      background-repeat: no-repeat;
+      background-position: left 100%;
+      background-size: 0 2px;
+      transition: background-size .35s var(--ease-out);
     }
-
-    .blog-card h2 a:hover {
-      color: #2980b9;
-    }
+    .blog-card:hover h2 a { background-size: 100% 2px; }
 
     .blog-excerpt {
       color: var(--text-secondary);
       margin-bottom: 1rem;
-      line-height: 1.6;
     }
 
     .blog-meta {
@@ -107,16 +109,10 @@
       align-items: center;
       gap: 0.5rem;
     }
+    .blog-meta a { color: var(--primary-color); text-decoration: none; }
+    .blog-meta a:hover { text-decoration: underline; }
 
-    .blog-meta a {
-      color: var(--primary-color);
-      text-decoration: none;
-    }
-
-    .blog-meta a:hover {
-      text-decoration: underline;
-    }
-
+    /* ==========  BUTTONS  ========== */
     .blog-actions {
       display: flex;
       gap: 1rem;
@@ -125,139 +121,85 @@
       border-top: 1px solid var(--border-color);
     }
 
-    .action-btn, .follow-btn, .view-btn {
+    .action-btn,
+    .follow-btn,
+    .view-btn {
       padding: 0.5rem 1rem;
       border: none;
       border-radius: 6px;
-      color: var(--text-primary);
-      cursor: pointer;
+      color: #fff;
       font-size: 0.9rem;
-      transition: all 0.3s;
+      cursor: pointer;
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      transition: transform .2s var(--ease-out),
+                  box-shadow .2s var(--ease-out),
+                  background .2s var(--ease-out);
     }
 
-    .action-btn {
-      background-color: var(--primary-color);
-    }
+    .action-btn        { background: var(--primary-color); }
+    .action-btn.liked  { background: var(--danger-color); }
+    .action-btn:hover  { background: #2980b9; transform: scale(1.05); }
 
-    .action-btn.liked {
-      background-color: var(--danger-color);
-    }
+    .follow-btn            { background: var(--success-color); }
+    .follow-btn.following  { background: var(--danger-color); }
+    .follow-btn:hover      { transform: scale(1.05); }
 
-    .action-btn:hover {
-      background-color: #2980b9;
-      transform: scale(1.05);
-    }
+    .view-btn            { background: var(--primary-color); text-decoration: none; }
+    .view-btn:hover      { background: #2980b9; transform: scale(1.05); }
 
-    .follow-btn {
-      background-color: var(--success-color);
-    }
-
-    .follow-btn.following {
-      background-color: var(--danger-color);
-    }
-
-    .follow-btn:hover {
-      background-color: #219653;
-      transform: scale(1.05);
-    }
-
-    .follow-btn.following:hover {
-      background-color: #c0392b;
-    }
-
-    .view-btn {
-      background-color: var(--primary-color);
-      text-decoration: none;
-    }
-
-    .view-btn:hover {
-      background-color: #2980b9;
-      transform: scale(1.05);
-    }
-
+    /* ==========  COMMENTS  ========== */
     .comments-section {
       margin-top: 1.5rem;
       padding-top: 1.5rem;
       border-top: 1px solid var(--border-color);
     }
-
     .comment {
       display: flex;
       gap: 1rem;
       margin-bottom: 1rem;
       padding: 1rem;
-      background-color: var(--hover-color);
+      background: var(--hover-color);
       border-radius: 8px;
     }
-
     .comment img {
       width: 40px;
       height: 40px;
       border-radius: 50%;
       object-fit: cover;
     }
+    .comment-content { flex: 1; }
+    .comment-author  { font-weight: bold; }
+    .comment-text    { color: var(--text-secondary); margin: 0.25rem 0; }
+    .comment-time    { font-size: 0.8rem; color: var(--text-secondary); }
 
-    .comment-content {
-      flex: 1;
-    }
-
-    .comment-author {
-      font-weight: bold;
-      color: var(--text-primary);
-      margin-bottom: 0.5rem;
-    }
-
-    .comment-text {
-      color: var(--text-secondary);
-      margin-bottom: 0.5rem;
-    }
-
-    .comment-time {
-      font-size: 0.8rem;
-      color: var(--text-secondary);
-    }
-
+    /* ==========  RESPONSIVE  ========== */
     @media (max-width: 768px) {
-      .main-container {
-        padding: 4rem 1rem 1rem;
-      }
-
-      h1 {
-        font-size: 1.5rem;
-      }
-
-      .blog-card h2 a {
-        font-size: 1.2rem;
-      }
-
-      .blog-actions {
-        flex-direction: column;
-        gap: 0.5rem;
-      }
+      .main-container { padding: 4rem 1rem 1rem; }
+      h1 { font-size: 1.5rem; }
+      .blog-card h2 a { font-size: 1.2rem; }
+      .blog-actions { flex-direction: column; gap: 0.5rem; }
     }
 
-    /* Animations */
+    /* ==========  ENTRANCE ANIMATION  ========== */
     .blog-card {
-      animation: slideIn 0.5s ease-out;
+      animation: slideUp .6s var(--ease-out) backwards;
     }
+    .blog-card:nth-child(1) { animation-delay: .05s; }
+    .blog-card:nth-child(2) { animation-delay: .1s; }
+    .blog-card:nth-child(3) { animation-delay: .15s; }
+    .blog-card:nth-child(4) { animation-delay: .2s; }
 
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 <body>
   <%- include('partials/header', { user }) %>
+
   <div class="main-container">
     <h1><i class="fas fa-blog"></i> Latest Blogs</h1>
 
@@ -279,6 +221,7 @@
           Posted by <a href="/profile/<%= blog.createdBy._id %>"><i class="fas fa-user"></i> <%= blog.createdBy.fullname %></a>
           <i class="fas fa-clock"></i> <%= moment(blog.createdAt).fromNow() %>
         </div>
+
         <div class="blog-actions">
           <% if (user) { %>
             <form action="/blog/<%= blog._id %>/like" method="POST">
@@ -287,6 +230,7 @@
                 <%= blog.likes.includes(user._id) ? 'Unlike' : 'Like' %> (<%= blog.likes.length %>)
               </button>
             </form>
+
             <form action="<%= blog.isFollowing ? '/user/unfollow/' : '/user/follow/' %><%= blog.createdBy._id %>" method="POST">
               <button class="follow-btn <%= blog.isFollowing ? 'following' : '' %>" type="submit">
                 <i class="fas <%= blog.isFollowing ? 'fa-user-minus' : 'fa-user-plus' %>"></i>
@@ -294,10 +238,12 @@
               </button>
             </form>
           <% } %>
+
           <a href="/blog/<%= blog._id %>" class="view-btn">
             <i class="fas fa-eye"></i> View Post
           </a>
         </div>
+
         <div class="comments-section">
           <h3><i class="fas fa-comments"></i> Comments</h3>
           <% blog.comments.forEach(comment => { %>
