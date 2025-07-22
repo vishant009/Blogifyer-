@@ -1,9 +1,11 @@
+// routes/user.js
 const { Router } = require("express");
 const User = require("../models/user");
 const Notification = require("../models/notification");
 const { createTokenForUser } = require("../services/authentication");
 const { sendEmail } = require("../middlewares/nodemailer");
 const crypto = require("crypto");
+const fetch = require("node-fetch");
 
 const router = Router();
 
@@ -93,6 +95,7 @@ router.post("/signup", async (req, res) => {
       verificationCode,
     });
   } catch (error) {
+    console.error("Signup error:", error);
     return res.render("signup", {
       title: "Sign Up",
       user: req.user || null,
@@ -129,6 +132,7 @@ router.get("/verify-email/:id/:code", async (req, res) => {
 
     return res.redirect("/user/signin?success_msg=Email verified successfully");
   } catch (error) {
+    console.error("Verify email error:", error);
     return res.render("signup", {
       title: "Sign Up",
       user: req.user || null,
@@ -169,6 +173,7 @@ router.post("/verify-email/:id/:code", async (req, res) => {
 
     return res.redirect("/user/signin?success_msg=Email verified successfully");
   } catch (error) {
+    console.error("Verify email error:", error);
     return res.render("signup", {
       title: "Sign Up",
       user: req.user || null,
@@ -192,6 +197,7 @@ router.post("/signin", async (req, res) => {
       .cookie("token", token, { httpOnly: true })
       .redirect("/?success_msg=Signed in successfully");
   } catch (error) {
+    console.error("Signin error:", error);
     return res.render("signin", {
       title: "Sign In",
       user: req.user || null,
@@ -250,6 +256,7 @@ router.post("/forgot-password", async (req, res) => {
       userId: user._id,
     });
   } catch (error) {
+    console.error("Forgot password error:", error);
     return res.render("forgot-password", {
       title: "Forgot Password",
       user: req.user || null,
@@ -275,6 +282,7 @@ router.post("/verify-reset-code/:id", async (req, res) => {
 
     return res.redirect(`/user/reset-password/${id}/${code}`);
   } catch (error) {
+    console.error("Verify reset code error:", error);
     return res.render("forgot-password", {
       title: "Forgot Password",
       user: req.user || null,
@@ -304,6 +312,7 @@ router.get("/reset-password/:id/:code", async (req, res) => {
       success_msg: req.query.success_msg,
     });
   } catch (error) {
+    console.error("Reset password GET error:", error);
     return res.redirect(`/user/forgot-password?error_msg=${error.message || "Invalid or expired reset code"}`);
   }
 });
@@ -326,6 +335,7 @@ router.post("/reset-password/:id/:code", async (req, res) => {
 
     return res.redirect("/user/signin?success_msg=Password reset successfully");
   } catch (error) {
+    console.error("Reset password POST error:", error);
     return res.render("reset-password", {
       title: "Reset Password",
       user: req.user || null,
@@ -377,6 +387,19 @@ router.post("/follow/:id", async (req, res) => {
       sender: currentUserId,
       type: "FOLLOW_REQUEST",
       message: `${req.user.fullname} wants to follow you`,
+      status: "PENDING",
+      isRead: false,
+    });
+
+    // Trigger push notification for follow request
+    await fetch(`http://localhost:${process.env.PORT}/notificationPush/trigger`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "FOLLOW_REQUEST",
+        senderId: currentUserId,
+        recipientId: userIdToFollow,
+      }),
     });
 
     return res.redirect(`/profile/${userIdToFollow}?success_msg=Follow request sent to ${userToFollow.fullname}`);
