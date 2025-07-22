@@ -1,25 +1,39 @@
 const { Router } = require("express");
 const Comment = require("../models/comments");
-const Blog = require("../models/blog"); // Added
-const fetch = require("node-fetch"); // Added
+const Blog = require("../models/blog");
+const fetch = require("node-fetch");
 
 const router = Router();
 
 // POST /comment/:blogId
 router.post("/:blogId", async (req, res) => {
   try {
+    // Check if user is authenticated
     if (!req.user) {
-      return res.redirect(`/blog/${req.params.blogId}?error_msg=Please log in to add a comment`);
+      return res.status(401).json({ error: "Please log in to add a comment" });
     }
+
+    // Validate blog ID
+    const blog = await Blog.findById(req.params.blogId);
+    if (!blog) {
+      return res.status(404).json({ error: "Blog not found" });
+    }
+
+    // Validate comment content
+    const { content } = req.body;
+    if (!content || !content.trim()) {
+      return res.status(400).json({ error: "Comment content is required" });
+    }
+
+    // Create comment
     const comment = await Comment.create({
-      content: req.body.content,
+      content: content.trim(),
       blogId: req.params.blogId,
       createdBy: req.user._id,
       likes: [],
     });
 
     // Trigger push notification for new comment
-    const blog = await Blog.findById(req.params.blogId);
     await fetch(`http://localhost:${process.env.PORT}/notificationPush/trigger`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -32,10 +46,11 @@ router.post("/:blogId", async (req, res) => {
       }),
     });
 
-    return res.redirect(`/blog/${req.params.blogId}?success_msg=Comment added successfully`);
+    // Return success response for AJAX
+    return res.status(201).json({ success: true, message: "Comment added successfully" });
   } catch (err) {
     console.error("Error adding comment:", err);
-    return res.redirect(`/blog/${req.params.blogId}?error_msg=Failed to add comment`);
+    return res.status(500).json({ error: "Failed to add comment" });
   }
 });
 
@@ -44,16 +59,16 @@ router.delete("/:commentId", async (req, res) => {
   try {
     const comment = await Comment.findById(req.params.commentId);
     if (!comment) {
-      return res.redirect(`/blog/${req.query.blogId || ''}?error_msg=Comment not found`);
+      return res.status(404).json({ error: "Comment not found" });
     }
     if (!req.user || comment.createdBy.toString() !== req.user._id.toString()) {
-      return res.redirect(`/blog/${comment.blogId}?error_msg=Unauthorized to delete this comment`);
+      return res.status(403).json({ error: "Unauthorized to delete this comment" });
     }
     await Comment.findByIdAndDelete(req.params.commentId);
-    return res.redirect(`/blog/${comment.blogId}?success_msg=Comment deleted successfully`);
+    return res.status(200).json({ success: true, message: "Comment deleted successfully" });
   } catch (err) {
     console.error("Error deleting comment:", err);
-    return res.redirect(`/blog/${req.query.blogId || ''}?error_msg=Failed to delete comment`);
+    return res.status(500).json({ error: "Failed to delete comment" });
   }
 });
 
@@ -61,14 +76,14 @@ router.delete("/:commentId", async (req, res) => {
 router.post("/:commentId/like", async (req, res) => {
   try {
     if (!req.user) {
-      return res.redirect(`/blog/${req.query.blogId || ''}?error_msg=Please log in to like a comment`);
+      return res.status(401).json({ error: "Please log in to like a comment" });
     }
     const comment = await Comment.findById(req.params.commentId);
     if (!comment) {
-      return res.redirect(`/blog/${req.query.blogId || ''}?error_msg=Comment not found`);
+      return res.status(404).json({ error: "Comment not found" });
     }
     if (comment.likes.includes(req.user._id)) {
-      return res.redirect(`/blog/${comment.blogId}?error_msg=You have already liked this comment`);
+      return res.status(400).json({ error: "You have already liked this comment" });
     }
     comment.likes.push(req.user._id);
     await comment.save();
@@ -86,10 +101,10 @@ router.post("/:commentId/like", async (req, res) => {
       }),
     });
 
-    return res.redirect(`/blog/${comment.blogId}?success_msg=Comment liked successfully`);
+    return res.status(200).json({ success: true, message: "Comment liked successfully" });
   } catch (err) {
     console.error("Error liking comment:", err);
-    return res.redirect(`/blog/${req.query.blogId || ''}?error_msg=Failed to like comment`);
+    return res.status(500).json({ error: "Failed to like comment" });
   }
 });
 
@@ -97,21 +112,21 @@ router.post("/:commentId/like", async (req, res) => {
 router.delete("/:commentId/like", async (req, res) => {
   try {
     if (!req.user) {
-      return res.redirect(`/blog/${req.query.blogId || ''}?error_msg=Please log in to unlike a comment`);
+      return res.status(401).json({ error: "Please log in to unlike a comment" });
     }
     const comment = await Comment.findById(req.params.commentId);
     if (!comment) {
-      return res.redirect(`/blog/${req.query.blogId || ''}?error_msg=Comment not found`);
+      return res.status(404).json({ error: "Comment not found" });
     }
     if (!comment.likes.includes(req.user._id)) {
-      return res.redirect(`/blog/${comment.blogId}?error_msg=You have not liked this comment`);
+      return res.status(400).json({ error: "You have not liked this comment" });
     }
     comment.likes = comment.likes.filter((userId) => userId.toString() !== req.user._id.toString());
     await comment.save();
-    return res.redirect(`/blog/${comment.blogId}?success_msg=Comment unliked successfully`);
+    return res.status(200).json({ success: true, message: "Comment unliked successfully" });
   } catch (err) {
     console.error("Error unliking comment:", err);
-    return res.redirect(`/blog/${req.query.blogId || ''}?error_msg=Failed to unlike comment`);
+    return res.status(500).json({ error: "Failed to unlike comment" });
   }
 });
 
