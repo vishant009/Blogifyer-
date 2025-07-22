@@ -88,14 +88,15 @@
               </button>
             </form>
 
-            <form action="<%= blog.isFollowing ? '/user/unfollow/' : '/user/follow/' %><%= blog.createdBy._id %>" method="POST">
-              <button class="btn follow <%= blog.isFollowing ? 'following' : '' %>">
-                <i class="fas <%= blog.isFollowing ? 'fa-user-minus' : 'fa-user-plus' %>"></i>
-                <%= blog.isFollowing ? 'Following' : 'Follow' %>
-              </button>
-            </form>
+            <% if (user._id.toString() !== blog.createdBy._id.toString()) { %>
+              <form action="<%= blog.isFollowing ? '/user/unfollow/' : '/user/follow/' %><%= blog.createdBy._id %>" method="POST">
+                <button class="btn follow <%= blog.isFollowing ? 'following' : '' %>">
+                  <i class="fas <%= blog.isFollowing ? 'fa-user-minus' : 'fa-user-plus' %>"></i>
+                  <%= blog.isFollowing ? 'Following' : 'Follow' %>
+                </button>
+              </form>
+            <% } %>
 
-            <!--  NEW: button only opens popup  -->
             <button class="btn comment" data-blog-id="<%= blog._id %>">
               <i class="fas fa-comment"></i> Comment (<%= blog.comments.length %>)
             </button>
@@ -108,7 +109,6 @@
     <% }) %>
   </main>
 
-  <!--  NEW: popup contains a plain form  -->
   <div class="comment-popup" id="commentPopup">
     <div class="comment-popup-content">
       <button class="close-btn" id="closePopup"><i class="fas fa-times"></i></button>
@@ -120,7 +120,6 @@
     </div>
   </div>
 
-  <!--  Tiny helper: only opens/closes popup  -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const buttons = document.querySelectorAll('.btn.comment');
@@ -137,9 +136,9 @@
         });
       });
 
-      close.addEventListener('click', () => popup.classList.remove('active'));
+      close.addEventListener('click',0 => popup.classList.remove('active'));
       popup.addEventListener('click', e => { if (e.target === popup) popup.classList.remove('active'); });
     });
   </script>
 </body>
-</ejs>
+</html>
