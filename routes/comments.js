@@ -1,6 +1,6 @@
 const { Router } = require("express");
 const Comment = require("../models/comments");
-const Blog = require("../models/blog");
+const Blog = require("../models/models/blog");
 const fetch = require("node-fetch");
 
 const router = Router();
@@ -47,7 +47,7 @@ router.post("/:blogId", async (req, res) => {
       // Continue even if notification fails to ensure comment is saved
     }
 
-    return res.status(200).json({ redirect: `/blog/${req.params.blogId}?success_msg=Comment added successfully` });
+    return res.redirect(`/blog/${req.params.blogId}?success_msg=Comment added successfully`);
   } catch (err) {
     console.error("Error adding comment:", err);
     return res.status(500).json({ error: "Failed to add comment" });
@@ -65,7 +65,7 @@ router.delete("/:commentId", async (req, res) => {
       return res.status(403).json({ error: "Unauthorized to delete this comment" });
     }
     await Comment.findByIdAndDelete(req.params.commentId);
-    return res.status(200).json({ redirect: `/blog/${comment.blogId}?success_msg=Comment deleted successfully` });
+    return res.redirect(`/blog/${comment.blogId}?success_msg=Comment deleted successfully`);
   } catch (err) {
     console.error("Error deleting comment:", err);
     return res.status(500).json({ error: "Failed to delete comment" });
@@ -106,7 +106,7 @@ router.post("/:commentId/like", async (req, res) => {
       // Continue even if notification fails
     }
 
-    return res.status(200).json({ redirect: `/blog/${comment.blogId}?success_msg=Comment liked successfully` });
+    return res.redirect(`/blog/${comment.blogId}?success_msg=Comment liked successfully`);
   } catch (err) {
     console.error("Error liking comment:", err);
     return res.status(500).json({ error: "Failed to like comment" });
@@ -128,7 +128,7 @@ router.delete("/:commentId/like", async (req, res) => {
     }
     comment.likes = comment.likes.filter((userId) => userId.toString() !== req.user._id.toString());
     await comment.save();
-    return res.status(200).json({ redirect: `/blog/${comment.blogId}?success_msg=Comment unliked successfully` });
+    return res.redirect(`/blog/${comment.blogId}?success_msg=Comment unliked successfully`);
   } catch (err) {
     console.error("Error unliking comment:", err);
     return res.status(500).json({ error: "Failed to unlike comment" });
