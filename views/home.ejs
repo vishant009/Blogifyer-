@@ -6,90 +6,156 @@
   <title>Home | Blogify</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <style>
-    :root{
-      --bg:#0f0f11;
-      --surface:rgba(255,255,255,.05);
-      --up:rgba(255,255,255,.08);
-      --border:rgba(255,255,255,.12);
-      --accent:#00d2ff;
-      --danger:#ff0050;
-      --success:#00e676;
-      --text:#ffffff;
-      --soft:#b3b3b3;
-      --radius:18px;
-      --ease:cubic-bezier(.4,0,.2,1);
+    :root {
+      --bg: #0f0f11;
+      --surface: rgba(255,255,255,.05);
+      --up: rgba(255,255,255,.08);
+      --border: rgba(255,255,255,.12);
+      --accent: #00d2ff;
+      --danger: #ff0050;
+      --success: #00e676;
+      --text: #ffffff;
+      --soft: #b3b3b3;
+      --radius: 18px;
+      --ease: cubic-bezier(.4,0,.2,1);
     }
-    *{margin:0;padding:0;box-sizing:border-box;font-family:"Segoe UI",system-ui,sans-serif}
-    body{background:linear-gradient(135deg,var(--bg) 0%, #1a1a2e 100%);color:var(--text);min-height:100vh}
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Segoe UI", system-ui, sans-serif; }
+    body { background: linear-gradient(135deg, var(--bg) 0%, #1a1a2e 100%); color: var(--text); min-height: 100vh; }
 
-    .main{max-width:1100px;margin:0 auto;padding:2.5rem 1rem 5rem;display:grid;gap:2.5rem}
-    .main h1{display:flex;align-items:center;gap:.6rem;font-size:2rem;font-weight:600}
+    .main { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1rem 5rem; display: grid; gap: 2.5rem; }
+    .main h1 { display: flex; align-items: center; gap: .6rem; font-size: 2rem; font-weight: 600; }
 
     /* alert glass boxes */
-    .alert{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.2rem;font-size:.95rem;display:flex;align-items:center;gap:.5rem}
-    .alert.success{color:var(--success)}
-    .alert.error{color:var(--danger)}
+    .alert { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.2rem; font-size: .95rem; display: flex; align-items: center; gap: .5rem; }
+    .alert.success { color: var(--success); }
+    .alert.error { color: var(--danger); }
 
     /* glass card */
-    .card{
-      background:var(--surface);
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      padding:1.8rem;
-      display:grid;
-      gap:1.2rem;
-      transition:transform .35s var(--ease),box-shadow .35s var(--ease);
-      box-shadow:0 8px 32px rgba(0,0,0,.4);
-      animation:pop .6s var(--ease) backwards;
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.8rem;
+      display: grid;
+      gap: 1.2rem;
+      transition: transform .35s var(--ease), box-shadow .35s var(--ease);
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+      animation: pop .6s var(--ease) backwards;
     }
-    .card:nth-child(2){animation-delay:.05s}
-    .card:nth-child(3){animation-delay:.1s}
-    .card:nth-child(4){animation-delay:.15s}
-    @keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
-    .card:hover{transform:translateY(-6px);box-shadow:0 16px 48px rgba(0,0,0,.6)}
+    .card:nth-child(2) { animation-delay: .05s; }
+    .card:nth-child(3) { animation-delay: .1s; }
+    .card:nth-child(4) { animation-delay: .15s; }
+    @keyframes pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
+    .card:hover { transform: translateY(-6px); box-shadow: 0 16px 48px rgba(0,0,0,.6); }
 
-    .card img{
-      width:100%;height:220px;object-fit:cover;border-radius:var(--radius);
-      transition:transform .4s var(--ease);transform-origin:center;
+    .card img {
+      width: 100%; height: 220px; object-fit: cover; border-radius: var(--radius);
+      transition: transform .4s var(--ease); transform-origin: center;
     }
-    .card:hover img{transform:scale(1.06)}
+    .card:hover img { transform: scale(1.06); }
 
-    .card h2 a{
-      color:var(--text);text-decoration:none;font-size:1.5rem;font-weight:600;
-      background:linear-gradient(90deg,var(--accent),var(--danger)) no-repeat left 100%/0 2px;
-      transition:background-size .35s var(--ease);
+    .card h2 a {
+      color: var(--text); text-decoration: none; font-size: 1.5rem; font-weight: 600;
+      background: linear-gradient(90deg, var(--accent), var(--danger)) no-repeat left 100%/0 2px;
+      transition: background-size .35s var(--ease);
     }
-    .card:hover h2 a{background-size:100% 2px}
+    .card:hover h2 a { background-size: 100% 2px; }
 
-    .meta{font-size:.85rem;color:var(--soft);display:flex;align-items:center;gap:.5rem}
-    .meta a{color:var(--accent);text-decoration:none}
+    .meta { font-size: .85rem; color: var(--soft); display: flex; align-items: center; gap: .5rem; }
+    .meta a { color: var(--accent); text-decoration: none; }
 
     /* actions */
-    .actions{display:flex;gap:.75rem;flex-wrap:wrap}
-    .btn{
-      padding:.6rem 1.2rem;border-radius:999px;border:none;font-size:.85rem;font-weight:600;
-      display:flex;align-items:center;gap:.4rem;cursor:pointer;color:#fff;
-      transition:transform .2s var(--ease),background .2s var(--ease);
+    .actions { display: flex; gap: .75rem; flex-wrap: wrap; }
+    .btn {
+      padding: .6rem 1.2rem; border-radius: 999px; border: none; font-size: .85rem; font-weight: 600;
+      display: flex; align-items: center; gap: .4rem; cursor: pointer; color: #fff;
+      transition: transform .2s var(--ease), background .2s var(--ease);
     }
-    .btn:active{transform:scale(.94)}
-    .btn.like{background:var(--accent)}
-    .btn.like.liked{background:var(--danger)}
-    .btn.follow{background:var(--success)}
-    .btn.follow.following{background:var(--danger)}
-    .btn.view{background:var(--up);border:1px solid var(--border)}
-    .btn.view:hover{background:var(--surface)}
+    .btn:active { transform: scale(.94); }
+    .btn.like { background: var(--accent); }
+    .btn.like.liked { background: var(--danger); }
+    .btn.follow { background: var(--success); }
+    .btn.follow.following { background: var(--danger); }
+    .btn.view { background: var(--up); border: 1px solid var(--border); }
+    .btn.view:hover { background: var(--surface); }
+    .btn.comment { background: #3498db; }
+    .btn.comment:hover { background: #2980b9; }
 
     /* comments */
-    .comments{border-top:1px solid var(--border);margin-top:1.2rem;padding-top:1.2rem}
-    .comment{display:flex;gap:.8rem;margin-bottom:.8rem}
-    .comment img{width:34px;height:34px;border-radius:50%}
-    .comment-body{background:var(--up);padding:.8rem;border-radius:var(--radius);flex:1;font-size:.9rem}
-    .comment-body strong{font-size:.95rem}
-    .comment-body span{font-size:.8rem;color:var(--soft)}
+    .comments { border-top: 1px solid var(--border); margin-top: 1.2rem; padding-top: 1.2rem; }
+    .comment { display: flex; gap: .8rem; margin-bottom: .8rem; }
+    .comment img { width: 34px; height: 34px; border-radius: 50%; }
+    .comment-body { background: var(--up); padding: .8rem; border-radius: var(--radius); flex: 1; font-size: .9rem; }
+    .comment-body strong { font-size: .95rem; }
+    .comment-body span { font-size: .8rem; color: var(--soft); }
 
-    @media(max-width:600px){
-      .card{padding:1.2rem}
-      .btn{font-size:.8rem;padding:.5rem .9rem}
+    /* comment popup */
+    .comment-popup {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .comment-popup.active { display: flex; }
+    .comment-popup-content {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      width: 90%;
+      max-width: 500px;
+      position: relative;
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    }
+    .comment-popup-content h3 {
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+      color: var(--text);
+    }
+    .comment-popup-content textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 1rem;
+      background: var(--up);
+      color: var(--text);
+      margin-bottom: 1rem;
+      resize: vertical;
+    }
+    .comment-popup-content .close-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+    .comment-popup-content .submit-btn {
+      padding: 0.6rem 1.2rem;
+      background: var(--accent);
+      border: none;
+      border-radius: 999px;
+      color: #fff;
+      font-size: .85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s var(--ease);
+    }
+    .comment-popup-content .submit-btn:hover { background: #00b7e0; }
+
+    @media(max-width:600px) {
+      .card { padding: 1.2rem; }
+      .btn { font-size: .8rem; padding: .5rem .9rem; }
+      .comment-popup-content { width: 95%; }
     }
   </style>
 </head>
@@ -100,11 +166,11 @@
     <h1><i class="fas fa-fire"></i> Latest Blogs</h1>
 
     <% if (success_msg) { %>
-      <div class="alert success"><i class="fas fa-check-circle"></i><%= success_msg %></div>
+      <div class="alert success"><i class="fas fa-check-circle"></i> <%= success_msg %></div>
     <% } %>
 
     <% if (error_msg) { %>
-      <div class="alert error"><i class="fas fa-exclamation-circle"></i><%= error_msg %></div>
+      <div class="alert error"><i class="fas fa-exclamation-circle"></i> <%= error_msg %></div>
     <% } %>
 
     <% blogs.forEach(blog => { %>
@@ -114,12 +180,12 @@
         <% } %>
 
         <h2><a href="/blog/<%= blog._id %>"><%= blog.title %></a></h2>
-        <p style="color:var(--soft);font-size:.95rem;line-height:1.5"><%= blog.body.substring(0,180) %>…</p>
+        <p style="color: var(--soft); font-size: .95rem; line-height: 1.5;"><%= blog.body.substring(0,180) %>…</p>
 
         <div class="meta">
           <i class="fas fa-user"></i>
           <a href="/profile/<%= blog.createdBy._id %>"><%= blog.createdBy.fullname %></a>
-          <i class="fas fa-clock" style="margin-left:.75rem"></i> <%= moment(blog.createdAt).fromNow() %>
+          <i class="fas fa-clock" style="margin-left: .75rem;"></i> <%= moment(blog.createdAt).fromNow() %>
         </div>
 
         <div class="actions">
@@ -137,6 +203,10 @@
                 <%= blog.isFollowing ? 'Following' : 'Follow' %>
               </button>
             </form>
+
+            <button class="btn comment" data-blog-id="<%= blog._id %>">
+              <i class="fas fa-comment"></i> Comment (<%= blog.comments.length %>)
+            </button>
           <% } %>
 
           <a class="btn view" href="/blog/<%= blog._id %>">
@@ -159,5 +229,60 @@
       </article>
     <% }) %>
   </main>
+
+  <!-- Comment Popup -->
+  <div class="comment-popup" id="commentPopup">
+    <div class="comment-popup-content">
+      <button class="close-btn" id="closePopup"><i class="fas fa-times"></i></button>
+      <h3>Add a Comment</h3>
+      <form id="commentForm" action="" method="POST">
+        <textarea name="content" required placeholder="Add a comment..." aria-label="Comment"></textarea>
+        <button type="submit" class="submit-btn"><i class="fas fa-comment"></i> Post Comment</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const commentButtons = document.querySelectorAll('.btn.comment');
+      const commentPopup = document.getElementById('commentPopup');
+      const closePopup = document.getElementById('closePopup');
+      const commentForm = document.getElementById('commentForm');
+
+      commentButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const blogId = button.getAttribute('data-blog-id');
+          commentForm.action = `/comment/${blogId}`;
+          commentPopup.classList.add('active');
+        });
+      });
+
+      closePopup.addEventListener('click', () => {
+        commentPopup.classList.remove('active');
+        commentForm.reset();
+      });
+
+      commentPopup.addEventListener('click', (e) => {
+        if (e.target === commentPopup) {
+          commentPopup.classList.remove('active');
+          commentForm.reset();
+        }
+      });
+
+      commentForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(commentForm);
+        const response = await fetch(commentForm.action, {
+          method: 'POST',
+          body: formData
+        });
+        if (response.ok) {
+          window.location.reload(); // Refresh to show new comment
+        } else {
+          alert('Failed to post comment. Please try again.');
+        }
+      });
+    });
+  </script>
 </body>
 </html>
