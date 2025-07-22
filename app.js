@@ -1,3 +1,4 @@
+// index.js
 require('dotenv').config();
 const express = require("express");
 const mongoose = require("mongoose");
@@ -12,9 +13,8 @@ const blogRoute = require("./routes/blog");
 const commentRoute = require("./routes/comments");
 const profileRoute = require("./routes/profile");
 const notificationRoute = require("./routes/notification");
-const notificationPushRoute = require("./routes/notificationPush"); // Added
+const notificationPushRoute = require("./routes/notificationPush");
 const { checkForAuthenticationCookie } = require("./middlewares/auth");
-
 const dashboardRoute = require("./routes/Dashboard");
 
 const app = express();
@@ -30,19 +30,22 @@ requiredEnvVars.forEach((varName) => {
 });
 
 // Debug: Log environment variables (mask sensitive info)
-console.log('MONGODB_URI:', process.env.MONGODB_URI);
+console.log('MONGODB_URI:', process.env.MONGODB_URI ? 'Set' : 'Not Set');
 console.log('PORT:', process.env.PORT);
-console.log('JWT_SECRET:', process.env.JWT_SECRET);
+console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'Set' : 'Not Set');
 console.log('EMAIL_USER:', process.env.EMAIL_USER);
-console.log('EMAIL_PASS:', '****'); // Mask password
-console.log('VAPID_PUBLIC_KEY:', process.env.VAPID_PUBLIC_KEY);
-console.log('VAPID_PRIVATE_KEY:', '****'); // Mask private key
+console.log('EMAIL_PASS:', '****');
+console.log('VAPID_PUBLIC_KEY:', process.env.VAPID_PUBLIC_KEY ? 'Set' : 'Not Set');
+console.log('VAPID_PRIVATE_KEY:', '****');
 
 // MongoDB Connection
 mongoose
-  .connect(process.env.MONGODB_URI)
+  .connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+  .catch((err) => {
+    console.error("MongoDB connection error:", err);
+    process.exit(1);
+  });
 
 // Middleware
 app.use(methodOverride("_method"));
@@ -94,6 +97,7 @@ app.get("/", async (req, res) => {
       error_msg: req.query.error_msg || null,
     });
   } catch (err) {
+    console.error("Error in home route:", err);
     renderWithError(res, "home", { user: req.user || null, blogs: [] }, "Failed to load blogs");
   }
 });
@@ -153,8 +157,17 @@ app.use("/comment", commentRoute);
 app.use("/profile", profileRoute);
 app.use("/settings", settingsRoute);
 app.use("/notification", notificationRoute);
-app.use("/notificationPush", notificationPushRoute); // Added
+app.use("/notificationPush", notificationPushRoute);
 app.use("/dashboard", dashboardRoute);
+
+// Error Handling for Uncaught Routes
+app.use((req, res) => {
+  res.status(404).render("error", {
+    user: req.user || null,
+    error_msg: "Page not found",
+    success_msg: null,
+  });
+});
 
 // Start Server
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
