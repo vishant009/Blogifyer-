@@ -78,13 +78,6 @@
     .btn.comment { background: #3498db; }
     .btn.comment:hover { background: #2980b9; }
 
-    .comments { border-top: 1px solid var(--border); margin-top: 1.2rem; padding-top: 1.2rem; }
-    .comment { display: flex; gap: .8rem; margin-bottom: .8rem; }
-    .comment img { width: 34px; height: 34px; border-radius: 50%; }
-    .comment-body { background: var(--up); padding: .8rem; border-radius: var(--radius); flex: 1; font-size: .9rem; }
-    .comment-body strong { font-size: .95rem; }
-    .comment-body span { font-size: .8rem; color: var(--soft); }
-
     .comment-popup {
       display: none;
       position: fixed;
@@ -208,19 +201,6 @@
             <i class="fas fa-eye"></i> View Post
           </a>
         </div>
-
-        <section class="comments">
-          <% blog.comments.forEach(c => { %>
-            <div class="comment">
-              <img src="<%= c.createdBy.profileImageURL %>" alt="avatar">
-              <div class="comment-body">
-                <strong><%= c.createdBy.fullname %></strong><br>
-                <%= c.content %><br>
-                <span><%= moment(c.createdAt).fromNow() %></span>
-              </div>
-            </div>
-          <% }) %>
-        </section>
       </article>
     <% }) %>
   </main>
@@ -282,6 +262,7 @@
             headers: {
               'Accept': 'application/json',
             },
+            credentials: 'include' // Ensure cookies are sent
           });
 
           const data = await response.json();
