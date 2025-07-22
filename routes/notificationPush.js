@@ -23,22 +23,20 @@ router.post("/subscribe", async (req, res) => {
       return res.status(401).json({ error: "Please log in to subscribe to notifications" });
     }
 
-    const subscription = req.body.subscription;
-    if (!subscription || !subscription.endpoint || !subscription.keys?.p256dh || !subscription.keys?.auth) {
+    const { subscription, userId } = req.body;
+    if (!subscription || !subscription.endpoint || !subscription.keys?.p256dh || !subscription.keys?.auth || !userId) {
       console.error("Invalid subscription data:", subscription);
       return res.status(400).json({ error: "Invalid subscription data" });
     }
 
-    // Save or update subscription
     const updatedSubscription = await PushNotification.findOneAndUpdate(
-      { userId: req.user._id },
+      { userId },
       { subscription, updatedAt: new Date() },
       { upsert: true, new: true }
     );
 
-    console.log(`User ${req.user._id} subscribed to push notifications`);
+    console.log(`User ${userId} subscribed to push notifications`);
 
-    // Test push notification to confirm subscription
     const payload = {
       title: "Welcome to Blogify Notifications",
       body: "You have successfully subscribed to push notifications!",
@@ -210,14 +208,6 @@ router.post("/trigger", async (req, res) => {
           url: `/notification`,
         };
         await sendPushNotification(recipientId, payload);
-        await Notification.create({
-          recipient: recipientId,
-          sender: senderId,
-          type: "FOLLOW_REQUEST",
-          message: `${sender.fullname} wants to follow you`,
-          status: "PENDING",
-          isRead: false,
-        });
         break;
 
       default:
