@@ -12,18 +12,16 @@ const blogRoute = require("./routes/blog");
 const commentRoute = require("./routes/comments");
 const profileRoute = require("./routes/profile");
 const notificationRoute = require("./routes/notification");
+const notificationPushRoute = require("./routes/notificationPush"); // Added
 const { checkForAuthenticationCookie } = require("./middlewares/auth");
 
 const dashboardRoute = require("./routes/Dashboard");
-
-
-
 
 const app = express();
 const PORT = process.env.PORT || 8000;
 
 // Validate environment variables
-const requiredEnvVars = ['MONGODB_URI', 'PORT', 'JWT_SECRET', 'EMAIL_USER', 'EMAIL_PASS'];
+const requiredEnvVars = ['MONGODB_URI', 'PORT', 'JWT_SECRET', 'EMAIL_USER', 'EMAIL_PASS', 'VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY'];
 requiredEnvVars.forEach((varName) => {
   if (!process.env[varName]) {
     console.error(`Error: Environment variable ${varName} is missing`);
@@ -37,6 +35,8 @@ console.log('PORT:', process.env.PORT);
 console.log('JWT_SECRET:', process.env.JWT_SECRET);
 console.log('EMAIL_USER:', process.env.EMAIL_USER);
 console.log('EMAIL_PASS:', '****'); // Mask password
+console.log('VAPID_PUBLIC_KEY:', process.env.VAPID_PUBLIC_KEY);
+console.log('VAPID_PRIVATE_KEY:', '****'); // Mask private key
 
 // MongoDB Connection
 mongoose
@@ -153,6 +153,7 @@ app.use("/comment", commentRoute);
 app.use("/profile", profileRoute);
 app.use("/settings", settingsRoute);
 app.use("/notification", notificationRoute);
+app.use("/notificationPush", notificationPushRoute); // Added
 app.use("/dashboard", dashboardRoute);
 
 // Start Server
