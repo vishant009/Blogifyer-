@@ -6,64 +6,67 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <style>
-    :root{
-      --bg:#0f0f11;
-      --surface:rgba(255,255,255,.06);
-      --up:rgba(255,255,255,.09);
-      --border:rgba(255,255,255,.12);
-      --accent:#00d2ff;
-      --text:#fff;
-      --soft:#b3b3b3;
-      --radius:12px;
-      --ease:cubic-bezier(.4,0,.2,1);
+    :root {
+      --bg: #0f0f11;
+      --surface: rgba(255,255,255,.06);
+      --up: rgba(255,255,255,.09);
+      --border: rgba(255,255,255,.12);
+      --accent: #00d2ff;
+      --text: #fff;
+      --soft: #b3b3b3;
+      --radius: 12px;
+      --ease: cubic-bezier(.4,0,.2,1);
     }
-    *{margin:0;padding:0;box-sizing:border-box;font-family:"Segoe UI",system-ui,sans-serif}
-    header{position:sticky;top:0;backdrop-filter:blur(20px);background:var(--surface);border-bottom:1px solid var(--border);z-index:999}
-    .nav{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem}
-    .logo{font-size:1.6rem;font-weight:700;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:.5rem}
-    .nav-links{display:flex;align-items:center;gap:2rem;list-style:none}
-    .nav-links a{color:var(--soft);text-decoration:none;font-size:.95rem;transition:color .2s var(--ease);position:relative}
-    .nav-links a:hover{color:var(--accent)}
-    .nav-links a.notification-badge::after{
-      content: '';
-      position: absolute;
-      top: -4px;
-      right: -4px;
-      width: 8px;
-      height: 8px;
-      background: #e74c3c;
-      border-radius: 50%;
-      display: none;
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Segoe UI", system-ui, sans-serif; }
+    header { position: sticky; top: 0; backdrop-filter: blur(20px); background: var(--surface); border-bottom: 1px solid var(--border); z-index: 1000; }
+    .nav { max-width: 1280px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; }
+    .logo { font-size: 1.8rem; font-weight: 700; color: var(--accent); text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
+    .logo i { font-size: 1.4rem; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; list-style: none; }
+    .nav-links a { color: var(--soft); text-decoration: none; font-size: 0.95rem; transition: color 0.2s var(--ease), transform 0.2s var(--ease); position: relative; padding: 0.5rem 0; }
+    .nav-links a:hover { color: var(--accent); transform: translateY(-2px); }
+    .nav-links a.notification-badge::after {
+      content: attr(data-count); position: absolute; top: -6px; right: -8px; min-width: 16px; height: 16px; background: #e74c3c; border-radius: 8px;
+      color: #fff; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; display: none;
     }
-    .nav-links a.notification-badge[data-count="0"]::after{display: none}
-    .nav-links a.notification-badge[data-count]:not([data-count="0"])::after{display: block}
-    .search-form{display:flex;align-items:center;gap:.5rem}
-    .search-form input{padding:.5rem .75rem;border:1px solid var(--border);border-radius:var(--radius);background:var(--up);color:var(--text);font-size:.9rem}
-    .search-form button{padding:.55rem;border:none;background:var(--accent);color:#fff;border-radius:var(--radius);cursor:pointer}
-    .dropdown{position:relative}
-    .dropdown-toggle{background:transparent;border:none;color:var(--soft);display:flex;align-items:center;gap:.5rem;font-size:.9rem;cursor:pointer}
-    .dropdown-toggle img{width:28px;height:28px;border-radius:50%;object-fit:cover}
-    .dropdown-menu{position:absolute;right:0;top:50px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.5rem 0;min-width:170px;display:none;flex-direction:column}
-    .dropdown-menu a{padding:.6rem 1rem;color:var(--soft);text-decoration:none;display:flex;align-items:center;gap:.5rem}
-    .dropdown-menu a:hover{background:var(--up)}
-    .dropdown:hover .dropdown-menu{display:flex}
-    .hamburger{display:none;font-size:1.4rem;color:var(--soft);background:none;border:none;cursor:pointer}
-    /* Added search popup styles */
-    .search-icon-container{position:relative}
-    .search-popup{position:fixed;top:60px;left:0;width:100%;background:var(--surface);border-bottom:1px solid var(--border);padding:1rem;display:none;z-index:1000}
-    .search-popup form{width:100%;max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:.5rem}
-    .search-popup input{width:100%;padding:.75rem;border:1px solid var(--border);border-radius:var(--radius);background:var(--up);color:var(--text);font-size:1rem}
-    .search-popup button{padding:.75rem;border:none;background:var(--accent);color:#fff;border-radius:var(--radius);cursor:pointer}
-    .search-results{max-height:calc(100vh - 120px);overflow-y:auto;padding:1rem 0;display:grid;grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));gap:1rem}
-    .search-result-card{background:var(--up);padding:1rem;border-radius:var(--radius);border:1px solid var(--border)}
-    .search-result-card h3{font-size:1.1rem;color:var(--text);margin-bottom:.5rem}
-    .search-result-card p{color:var(--soft);font-size:.9rem}
-    @media(max-width:768px){
-      .nav-links{position:fixed;top:60px;left:0;width:100%;background:var(--surface);flex-direction:column;padding:1rem 0;gap:1rem;transform:translateY(-100%);transition:transform .3s var(--ease);border-bottom:1px solid var(--border)}
-      .nav-links.open{transform:translateY(0)}
-      .hamburger{display:block}
-      .search-form{display:none} /* Hide default search form on mobile */
-      .search-popup{top:60px}
+    .nav-links a.notification-badge[data-count="0"]::after { display: none; }
+    .nav-links a.notification-badge[data-count]:not([data-count="0"])::after { display: block; }
+    .search-container { position: relative; display: flex; align-items: center; }
+    .search-form { display: flex; align-items: center; gap: 0.5rem; }
+    .search-form input { padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--up); color: var(--text); font-size: 0.9rem; width: 200px; transition: width 0.3s var(--ease); }
+    .search-form input:focus { width: 250px; outline: none; border-color: var(--accent); }
+    .search-form button { padding: 0.6rem; border: none; background: var(--accent); color: #fff; border-radius: var(--radius); cursor: pointer; transition: background 0.2s var(--ease); }
+    .search-form button:hover { background: #00b8e6; }
+    .search-icon { display: none; font-size: 1.2rem; color: var(--soft); background: none; border: none; cursor: pointer; padding: 0.5rem; }
+    .dropdown { position: relative; }
+    .dropdown-toggle { background: transparent; border: none; color: var(--soft); display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; cursor: pointer; transition: color 0.2s var(--ease); }
+    .dropdown-toggle:hover { color: var(--accent); }
+    .dropdown-toggle img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
+    .dropdown-menu { position: absolute; right: 0; top: 48px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.5rem 0; min-width: 180px; display: none; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    .dropdown-menu a { padding: 0.6rem 1rem; color: var(--soft); text-decoration: none; display: flex; align-items: center; gap: 0.5rem; transition: background 0.2s var(--ease); }
+    .dropdown-menu a:hover { background: var(--up); color: var(--accent); }
+    .dropdown:hover .dropdown-menu { display: flex; }
+    .hamburger { display: none; font-size: 1.4rem; color: var(--soft); background: none; border: none; cursor: pointer; padding: 0.5rem; }
+    .search-popup { position: fixed; top: 60px; left: 0; width: 100%; background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem; display: none; z-index: 999; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    .search-popup form { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; }
+    .search-popup input { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--up); color: var(--text); font-size: 1rem; }
+    .search-popup input:focus { outline: none; border-color: var(--accent); }
+    .search-popup button { padding: 0.75rem 1rem; border: none; background: var(--accent); color: #fff; border-radius: var(--radius); cursor: pointer; transition: background 0.2s var(--ease); }
+    .search-popup button:hover { background: #00b8e6; }
+    .search-results { max-height: calc(100vh - 150px); overflow-y: auto; padding: 1rem 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+    .search-result-card { background: var(--up); padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border); transition: transform 0.2s var(--ease); }
+    .search-result-card:hover { transform: translateY(-4px); }
+    .search-result-card h3 { font-size: 1.1rem; color: var(--text); margin-bottom: 0.5rem; }
+    .search-result-card p { color: var(--soft); font-size: 0.9rem; line-height: 1.4; }
+    @media (max-width: 768px) {
+      .nav-links { position: fixed; top: 60px; left: 0; width: 100%; background: var(--surface); flex-direction: column; padding: 1rem; gap: 1rem; transform: translateY(-100%); transition: transform 0.3s var(--ease); border-bottom: 1px solid var(--border); }
+      .nav-links.open { transform: translateY(0); }
+      .hamburger { display: block; }
+      .search-form { display: none; }
+      .search-icon { display: block; }
+      .search-popup { top: 60px; }
+      .search-popup form { grid-template-columns: 1fr auto; }
+      .search-results { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -71,7 +74,6 @@
 <header>
   <nav class="nav">
     <a href="/" class="logo"><i class="fas fa-blog"></i> Blogify</a>
-
     <ul class="nav-links" id="navLinks">
       <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
       <% if (user) { %>
@@ -83,18 +85,14 @@
         <li><a href="/user/signup"><i class="fas fa-user-plus"></i> Sign Up</a></li>
       <% } %>
     </ul>
-
-    <div style="display:flex;align-items:center;gap:1rem">
-      <!-- Modified search form to include icon trigger -->
-      <div class="search-icon-container">
-        <button class="search-trigger" id="searchTrigger"><i class="fas fa-search"></i></button>
+    <div class="nav-controls" style="display: flex; align-items: center; gap: 1rem;">
+      <div class="search-container">
+        <button class="search-icon" id="searchTrigger"><i class="fas fa-search"></i></button>
         <form class="search-form" action="/search" method="GET">
           <input type="text" name="q" placeholder="Search…" aria-label="Search">
           <button type="submit"><i class="fas fa-search"></i></button>
         </form>
       </div>
-
-      <!-- Added search popup -->
       <div class="search-popup" id="searchPopup">
         <form action="/search" method="GET">
           <input type="text" name="q" placeholder="Search for users or blogs…" aria-label="Search">
@@ -102,12 +100,11 @@
         </form>
         <div class="search-results" id="searchResults"></div>
       </div>
-
       <% if (user) { %>
         <div class="dropdown">
           <button class="dropdown-toggle">
             <img src="<%= user.profileImageURL || '/images/default.png' %>" alt="avatar">
-            <%= user.fullname %>
+            <span><%= user.fullname %></span>
             <i class="fas fa-chevron-down"></i>
           </button>
           <div class="dropdown-menu">
@@ -117,7 +114,6 @@
           </div>
         </div>
       <% } %>
-
       <button class="hamburger" id="hamburger"><i class="fas fa-bars"></i></button>
     </div>
   </nav>
@@ -129,20 +125,28 @@
   const searchTrigger = document.getElementById('searchTrigger');
   const searchPopup = document.getElementById('searchPopup');
   const searchResults = document.getElementById('searchResults');
-  
+
+  // Toggle mobile menu
   hamburger.addEventListener('click', () => {
     navLinks.classList.toggle('open');
   });
 
-  // Search popup toggle on double click
-  searchTrigger.addEventListener('dblclick', () => {
+  // Toggle search popup on single click
+  searchTrigger.addEventListener('click', () => {
     searchPopup.style.display = searchPopup.style.display === 'block' ? 'none' : 'block';
     if (searchPopup.style.display === 'block') {
       searchPopup.querySelector('input').focus();
     }
   });
 
-  // Function to fetch unread notification count and update badge
+  // Close search popup when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!searchPopup.contains(e.target) && !searchTrigger.contains(e.target) && searchPopup.style.display === 'block') {
+      searchPopup.style.display = 'none';
+    }
+  });
+
+  // Update notification badge
   async function updateNotificationBadge() {
     try {
       const response = await fetch('/notification/unread-count');
@@ -158,46 +162,41 @@
     }
   }
 
-  // Clear notifications when visiting notification page
+  // Clear notifications on notification page
   async function clearNotifications() {
     if (window.location.pathname === '/notification') {
       try {
-        await fetch('/notification/mark-all-read', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
+        await fetch('/notification/mark-all-read', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
         const badge = document.getElementById('notificationBadge');
-        if (badge) {
-          badge.setAttribute('data-count', '0');
-        }
+        if (badge) badge.setAttribute('data-count', '0');
       } catch (err) {
         console.error('Error marking notifications as read:', err);
       }
     }
   }
 
-  // Search popup functionality
+  // Handle search
   async function handleSearch(event) {
     event.preventDefault();
-    const query = event.target.querySelector('input[name="q"]').value;
+    const form = event.target;
+    const query = form.querySelector('input[name="q"]').value;
     try {
       const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
       const data = await response.json();
       displaySearchResults(data);
+      searchPopup.style.display = 'block'; // Show popup with results
     } catch (err) {
       console.error('Error searching:', err);
     }
   }
 
+  // Display search results
   function displaySearchResults(results) {
     searchResults.innerHTML = '';
     if (results.length === 0) {
       searchResults.innerHTML = '<p style="color: var(--soft); text-align: center;">No results found</p>';
       return;
     }
-    
     results.forEach(result => {
       const card = document.createElement('div');
       card.className = 'search-result-card';
@@ -214,14 +213,12 @@
     form.addEventListener('submit', handleSearch);
   });
 
-  // Run immediately
+  // Initialize
   updateNotificationBadge();
-  clearNotifications(); // Added to clear notifications on page load if on notifications page
-
-  // Periodic checks
+  clearNotifications();
   setInterval(updateNotificationBadge, 30000);
 
-  // Refresh page on new notifications (only on notifications page)
+  // Refresh notifications page on new notifications
   if (window.location.pathname === '/notification') {
     let lastCount = 0;
     async function checkForNewNotifications() {
