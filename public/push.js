@@ -1,5 +1,4 @@
-// public/js/push.js
-// Utility to convert base64 VAPID key to Uint8Array
+// public/push.js
 function urlBase64ToUint8Array(base64String) {
   try {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -12,7 +11,6 @@ function urlBase64ToUint8Array(base64String) {
   }
 }
 
-// Check if push notifications are supported
 async function subscribeToPush() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
     console.warn('Push notifications are not supported in this browser');
@@ -20,18 +18,15 @@ async function subscribeToPush() {
   }
 
   try {
-    // Register service worker
     const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
     console.log('Service Worker registered:', registration);
 
-    // Request notification permission
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
       console.warn('Notification permission denied');
       return;
     }
 
-    // Get VAPID public key from meta tag
     const vapidMeta = document.querySelector('meta[name="vapid-pub"]');
     if (!vapidMeta) {
       console.error('VAPID public key not found in meta tag');
@@ -43,13 +38,11 @@ async function subscribeToPush() {
       return;
     }
 
-    // Subscribe to push notifications
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey,
     });
 
-    // Get user ID from meta tag
     const userIdMeta = document.querySelector('meta[name="user-id"]');
     const userId = userIdMeta ? userIdMeta.content : null;
 
@@ -58,11 +51,10 @@ async function subscribeToPush() {
       return;
     }
 
-    // Send subscription to server
     const response = await fetch('/notificationPush/subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subscription }),
+      body: JSON.stringify({ subscription, userId }),
     });
 
     const result = await response.json();
@@ -76,7 +68,6 @@ async function subscribeToPush() {
   }
 }
 
-// Poll for unread notifications
 async function pollNotifications() {
   try {
     const userIdMeta = document.querySelector('meta[name="user-id"]');
@@ -90,10 +81,11 @@ async function pollNotifications() {
     });
 
     const result = await response.json();
-    if (result.success && result.count > 0) {
-      const notificationLink = document.querySelector('a[href="/notification"]');
+    if (result.success) {
+      const notificationLink = document.querySelector('a[href="/notification"].notification-badge');
       if (notificationLink) {
-        notificationLink.innerHTML = `<i class="fas fa-bell"></i> Notifications (${result.count})`;
+        notificationLink.setAttribute('data-count', result.count);
+        notificationLink.innerHTML = `<i class="fas fa-bell"></i> Notifications${result.count > 0 ? ` (${result.count})` : ''}`;
       }
     }
   } catch (err) {
@@ -101,10 +93,9 @@ async function pollNotifications() {
   }
 }
 
-// Run subscription and polling
 if (document.readyState === 'complete') {
   subscribeToPush();
-  setInterval(pollNotifications, 30000); // Poll every 30 seconds
+  setInterval(pollNotifications, 30000);
 } else {
   window.addEventListener('load', () => {
     subscribeToPush();
