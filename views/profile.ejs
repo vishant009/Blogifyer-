@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="user-id" content="<%= user ? user._id : '' %>">
   <meta name="vapid-pub" content="<%= process.env.VAPID_PUBLIC_KEY %>">
-  <title><%= profile.fullname %>'s Profile | Blogify</title>
+  <title><%= profileUser.fullname %>'s Profile | Blogify</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <style>
     body {
@@ -156,9 +156,9 @@
       </p>
     <% } %>
 
-    <% if (profile) { %>
+    <% if (profileUser) { %>
       <div class="profile-header">
-        <img src="<%= profile.profileImageURL || '/default-profile.png' %>" alt="<%= profile.fullname %>'s Profile Image" style="
+        <img src="<%= profileUser.profileImageURL || '/default-profile.png' %>" alt="<%= profileUser.fullname %>'s Profile Image" style="
           width: 100px;
           height: 100px;
           border-radius: 50%;
@@ -166,19 +166,19 @@
           object-fit: cover;
         ">
         <div style="flex: 1;">
-          <h2 style="font-size: 1.5rem; color: #ecf0f1;"><%= profile.fullname %></h2>
-          <p style="color: #ecf0f1;"><%= profile.email %></p>
-          <p style="color: #ecf0f1;"><%= profile.bio || 'No bio provided' %></p>
+          <h2 style="font-size: 1.5rem; color: #ecf0f1;"><%= profileUser.fullname %></h2>
+          <p style="color: #ecf0f1;"><%= profileUser.email %></p>
+          <p style="color: #ecf0f1;"><%= profileUser.bio || 'No bio provided' %></p>
           <p style="color: #7f8c8d;">
-            <span class="followers-toggle" style="cursor: pointer; color: #3498db;" tabindex="0" aria-label="View Followers">Followers: <%= profile.followers?.length || 0 %></span> | 
-            <span class="following-toggle" style="cursor: pointer; color: #3498db;" tabindex="0" aria-label="View Following">Following: <%= profile.following?.length || 0 %></span>
+            <span class="followers-toggle" style="cursor: pointer; color: #3498db;" tabindex="0" aria-label="View Followers">Followers: <%= profileUser.followers?.length || 0 %></span> | 
+            <span class="following-toggle" style="cursor: pointer; color: #3498db;" tabindex="0" aria-label="View Following">Following: <%= profileUser.following?.length || 0 %></span>
           </p>
         </div>
       </div>
 
       <div class="profile-actions">
-        <% if (user && user._id.toString() !== profile._id.toString()) { %>
-          <form action="<%= isFollowing ? `/user/unfollow/${profile._id}` : `/user/follow/${profile._id}` %>?_method=POST" method="POST">
+        <% if (user && user._id.toString() !== profileUser._id.toString()) { %>
+          <form action="<%= isFollowing ? `/user/unfollow/${profileUser._id}` : `/user/follow/${profileUser._id}` %>?_method=POST" method="POST">
             <input type="hidden" name="_method" value="POST">
             <button class="follow-btn" type="submit" style="
               padding: 0.5rem 1rem;
@@ -203,10 +203,10 @@
         <button class="close-btn close-followers" aria-label="Close Followers Popup">
           <i class="fas fa-times"></i>
         </button>
-        <% if (!profile.followers || profile.followers.length === 0) { %>
+        <% if (!profileUser.followers || profileUser.followers.length === 0) { %>
           <p style="color: #ecf0f1;">No followers yet.</p>
         <% } else { %>
-          <% profile.followers.forEach(follower => { %>
+          <% profileUser.followers.forEach(follower => { %>
             <div style="
               display: flex;
               align-items: center;
@@ -237,10 +237,10 @@
         <button class="close-btn close-following" aria-label="Close Following Popup">
           <i class="fas fa-times"></i>
         </button>
-        <% if (!profile.following || profile.following.length === 0) { %>
+        <% if (!profileUser.following || profileUser.following.length === 0) { %>
           <p style="color: #ecf0f1;">No following yet.</p>
         <% } else { %>
-          <% profile.following.forEach(following => { %>
+          <% profileUser.following.forEach(following => { %>
             <div style="
               display: flex;
               align-items: center;
@@ -266,7 +266,7 @@
       </div>
 
       <div style="margin-top: 2rem;">
-        <h2 style="color: #ecf0f1;"><i class="fas fa-blog"></i> Blogs by <%= profile.fullname %></h2>
+        <h2 style="color: #ecf0f1;"><i class="fas fa-blog"></i> Blogs by <%= profileUser.fullname %></h2>
         <% if (blogs && blogs.length > 0) { %>
           <% blogs.forEach(blog => { %>
             <div class="blog-card">
@@ -278,9 +278,6 @@
                     text-decoration: none;
                   " onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'"><%= blog.title %></a>
                 </h3>
-                <p style="color: #ecf0f1; line-height: 1.6; margin: 0 0 0.5rem;">
-                  <%= blog.body && blog.body.length > 100 ? blog.body.substring(0, 100) + '...' : blog.body %>
-                </p>
                 <div class="blog-meta">
                   <span><i class="fas fa-heart"></i> <%= blog.likes?.length || 0 %> Likes</span>
                   <span><i class="fas fa-comment"></i> <%= blog.comments?.length || 0 %> Comments</span>
