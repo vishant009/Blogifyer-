@@ -90,6 +90,11 @@
                   Unknown User
                 <% } %>
                 : <%= notification.message %>
+                <% if (notification.status === 'ACCEPTED') { %>
+                  <span style="color: #2ecc71;">(Accepted)</span>
+                <% } else if (notification.status === 'REJECTED') { %>
+                  <span style="color: #e74c3c;">(Rejected)</span>
+                <% } %>
               </p>
               <% if (notification.blogId && notification.blogId._id) { %>
                 <a href="/blog/<%= notification.blogId._id %>" style="
@@ -102,7 +107,8 @@
                 color: #7f8c8d;
               "><i class="fas fa-clock"></i> <%= moment(notification.createdAt).fromNow() %></p>
               <% if (notification.type === 'FOLLOW_REQUEST' && notification.status === 'PENDING') { %>
-                <form action="/notification/accept/<%= notification._id %>" method="POST" style="display: inline;">
+                <form action="/notification/accept/<%= notification._id %>?_method=POST" method="POST" style="display: inline;">
+                  <input type="hidden" name="_method" value="POST">
                   <button type="submit" style="
                     padding: 0.5rem 1rem;
                     background-color: #2ecc71;
@@ -116,7 +122,8 @@
                     <i class="fas fa-check"></i> Accept
                   </button>
                 </form>
-                <form action="/notification/reject/<%= notification._id %>" method="POST" style="display: inline;">
+                <form action="/notification/reject/<%= notification._id %>?_method=POST" method="POST" style="display: inline;">
+                  <input type="hidden" name="_method" value="POST">
                   <button type="submit" style="
                     padding: 0.5rem 1rem;
                     background-color: #e74c3c;
@@ -130,8 +137,9 @@
                     <i class="fas fa-times"></i> Reject
                   </button>
                 </form>
-              <% } else if (!notification.isRead) { %>
-                <form action="/notification/read/<%= notification._id %>" method="POST" style="display: inline;">
+              <% } else if (!notification.isRead && notification.type !== 'FOLLOW_REQUEST') { %>
+                <form action="/notification/read/<%= notification._id %>?_method=POST" method="POST" style="display: inline;">
+                  <input type="hidden" name="_method" value="POST">
                   <button type="submit" style="
                     padding: 0.5rem 1rem;
                     background-color: #3498db;
