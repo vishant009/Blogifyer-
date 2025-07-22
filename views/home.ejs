@@ -1,244 +1,144 @@
-<!-- views/partials/header.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home | Blogify</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <style>
-    :root{
-      --bg:#0f0f11;
-      --surface:rgba(255,255,255,.06);
-      --up:rgba(255,255,255,.09);
-      --border:rgba(255,255,255,.12);
-      --accent:#00d2ff;
-      --text:#fff;
-      --soft:#b3b3b3;
-      --radius:12px;
-      --ease:cubic-bezier(.4,0,.2,1);
+    /* ----  EXACT SAME STYLES AS BEFORE  ---- */
+    :root {
+      --bg: #0f0f11; --surface: rgba(255,255,255,.05); --up: rgba(255,255,255,.08);
+      --border: rgba(255,255,255,.12); --accent: #00d2ff; --danger: #ff0050;
+      --success: #00e676; --text: #ffffff; --soft: #b3b3b3; --radius: 18px;
+      --ease: cubic-bezier(.4,0,.2,1);
     }
-    *{margin:0;padding:0;box-sizing:border-box;font-family:"Segoe UI",system-ui,sans-serif}
-    header{position:sticky;top:0;backdrop-filter:blur(20px);background:var(--surface);border-bottom:1px solid var(--border);z-index:999}
-    .nav{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem}
-    .logo{font-size:1.6rem;font-weight:700;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:.5rem}
-    .nav-links{display:flex;align-items:center;gap:2rem;list-style:none}
-    .nav-links a{color:var(--soft);text-decoration:none;font-size:.95rem;transition:color .2s var(--ease);position:relative}
-    .nav-links a:hover{color:var(--accent)}
-    .nav-links a.notification-badge::after{
-      content: '';
-      position: absolute;
-      top: -4px;
-      right: -4px;
-      width: 8px;
-      height: 8px;
-      background: #e74c3c;
-      border-radius: 50%;
-      display: none;
-    }
-    .nav-links a.notification-badge[data-count="0"]::after{display: none}
-    .nav-links a.notification-badge[data-count]:not([data-count="0"])::after{display: block}
-    .search-form{display:flex;align-items:center;gap:.5rem}
-    .search-form input{padding:.5rem .75rem;border:1px solid var(--border);border-radius:var(--radius);background:var(--up);color:var(--text);font-size:.9rem}
-    .search-form button{padding:.55rem;border:none;background:var(--accent);color:#fff;border-radius:var(--radius);cursor:pointer}
-    .dropdown{position:relative}
-    .dropdown-toggle{background:transparent;border:none;color:var(--soft);display:flex;align-items:center;gap:.5rem;font-size:.9rem;cursor:pointer}
-    .dropdown-toggle img{width:28px;height:28px;border-radius:50%;object-fit:cover}
-    .dropdown-menu{position:absolute;right:0;top:50px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.5rem 0;min-width:170px;display:none;flex-direction:column}
-    .dropdown-menu a{padding:.6rem 1rem;color:var(--soft);text-decoration:none;display:flex;align-items:center;gap:.5rem}
-    .dropdown-menu a:hover{background:var(--up)}
-    .dropdown:hover .dropdown-menu{display:flex}
-    .hamburger{display:none;font-size:1.4rem;color:var(--soft);background:none;border:none;cursor:pointer}
-    /* Added search popup styles */
-    .search-icon-container{position:relative}
-    .search-popup{position:fixed;top:60px;left:0;width:100%;background:var(--surface);border-bottom:1px solid var(--border);padding:1rem;display:none;z-index:1000}
-    .search-popup form{width:100%;max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:.5rem}
-    .search-popup input{width:100%;padding:.75rem;border:1px solid var(--border);border-radius:var(--radius);background:var(--up);color:var(--text);font-size:1rem}
-    .search-popup button{padding:.75rem;border:none;background:var(--accent);color:#fff;border-radius:var(--radius);cursor:pointer}
-    .search-results{max-height:calc(100vh - 120px);overflow-y:auto;padding:1rem 0;display:grid;grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));gap:1rem}
-    .search-result-card{background:var(--up);padding:1rem;border-radius:var(--radius);border:1px solid var(--border)}
-    .search-result-card h3{font-size:1.1rem;color:var(--text);margin-bottom:.5rem}
-    .search-result-card p{color:var(--soft);font-size:.9rem}
-    @media(max-width:768px){
-      .nav-links{position:fixed;top:60px;left:0;width:100%;background:var(--surface);flex-direction:column;padding:1rem 0;gap:1rem;transform:translateY(-100%);transition:transform .3s var(--ease);border-bottom:1px solid var(--border)}
-      .nav-links.open{transform:translateY(0)}
-      .hamburger{display:block}
-      .search-form{display:none} /* Hide default search form on mobile */
-      .search-popup{top:60px}
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Segoe UI", system-ui, sans-serif; }
+    body { background: linear-gradient(135deg, var(--bg) 0%, #1a1a2e 100%); color: var(--text); min-height: 100vh; }
+    .main { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1rem 5rem; display: grid; gap: 2.5rem; }
+    .main h1 { display: flex; align-items: center; gap: .6rem; font-size: 2rem; font-weight: 600; }
+    .alert { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.2rem; font-size: .95rem; display: flex; align-items: center; gap: .5rem; }
+    .alert.success { color: var(--success); } .alert.error { color: var(--danger); }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.8rem; display: grid; gap: 1.2rem; transition: transform .35s var(--ease), box-shadow .35s var(--ease); box-shadow: 0 8px 32px rgba(0,0,0,.4); animation: pop .6s var(--ease) backwards; }
+    .card:nth-child(2){animation-delay:.05s}.card:nth-child(3){animation-delay:.1s}.card:nth-child(4){animation-delay:.15s}
+    @keyframes pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
+    .card:hover { transform: translateY(-6px); box-shadow: 0 16px 48px rgba(0,0,0,.6); }
+    .card img { width: 100%; height: 220px; object-fit: cover; border-radius: var(--radius); transition: transform .4s var(--ease); transform-origin: center; }
+    .card:hover img { transform: scale(1.06); }
+    .card h2 a { color: var(--text); text-decoration: none; font-size: 1.5rem; font-weight: 600; background: linear-gradient(90deg, var(--accent), var(--danger)) no-repeat left 100%/0 2px; transition: background-size .35s var(--ease); }
+    .card:hover h2 a { background-size: 100% 2px; }
+    .meta { font-size: .85rem; color: var(--soft); display: flex; align-items: center; gap: .5rem; }
+    .meta a { color: var(--accent); text-decoration: none; }
+    .actions { display: flex; gap: .75rem; flex-wrap: wrap; }
+    .btn { padding: .6rem 1.2rem; border-radius: 999px; border: none; font-size: .85rem; font-weight: 600; display: flex; align-items: center; gap: .4rem; cursor: pointer; color: #fff; transition: transform .2s var(--ease), background .2s var(--ease); }
+    .btn:active { transform: scale(.94); }
+    .btn.like { background: var(--accent); } .btn.like.liked { background: var(--danger); }
+    .btn.follow { background: var(--success); } .btn.follow.following { background: var(--danger); }
+    .btn.view { background: var(--up); border: 1px solid var(--border); } .btn.view:hover { background: var(--surface); }
+    .btn.comment { background: #3498db; } .btn.comment:hover { background: #2980b9; }
+    .comment-popup { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); place-items: center; z-index: 1000; }
+    .comment-popup.active { display: grid; }
+    .comment-popup-content { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; width: 90%; max-width: 500px; position: relative; box-shadow: 0 8px 32px rgba(0,0,0,.4); }
+    .comment-popup-content h3 { margin-bottom: 1rem; font-size: 1.2rem; color: var(--text); }
+    .comment-popup-content textarea { width: 100%; padding: .75rem; border: 1px solid var(--border); border-radius: var(--radius); font-size: 1rem; background: var(--up); color: var(--text); margin-bottom: 1rem; resize: vertical; }
+    .comment-popup-content .close-btn { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--text); font-size: 1.2rem; cursor: pointer; }
+    .comment-popup-content .submit-btn { padding: .6rem 1.2rem; background: var(--accent); border: none; border-radius: 999px; color: #fff; font-size: .85rem; font-weight: 600; cursor: pointer; }
+    .comment-popup-content .submit-btn:hover { background: #00b7e0; }
+    @media(max-width:600px){
+      .card { padding: 1.2rem; }
+      .btn { font-size: .8rem; padding: .5rem .9rem; }
+      .comment-popup-content { width: 95%; }
     }
   </style>
 </head>
 <body>
-<header>
-  <nav class="nav">
-    <a href="/" class="logo"><i class="fas fa-blog"></i> Blogify</a>
+  <%- include('partials/header', { user }) %>
 
-    <ul class="nav-links" id="navLinks">
-      <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
-      <% if (user) { %>
-        <li><a href="/blog/addBlog"><i class="fas fa-plus"></i> Add Blog</a></li>
-        <li><a href="/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-        <li><a href="/notification" class="notification-badge" id="notificationBadge" data-count="0"><i class="fas fa-bell"></i> Notifications</a></li>
-      <% } else { %>
-        <li><a href="/user/signin"><i class="fas fa-sign-in-alt"></i> Sign In</a></li>
-        <li><a href="/user/signup"><i class="fas fa-user-plus"></i> Sign Up</a></li>
-      <% } %>
-    </ul>
+  <main class="main">
+    <h1><i class="fas fa-fire"></i> Latest Blogs</h1>
 
-    <div style="display:flex;align-items:center;gap:1rem">
-      <!-- Modified search form to include icon trigger -->
-      <div class="search-icon-container">
-        <button class="search-trigger" id="searchTrigger"><i class="fas fa-search"></i></button>
-        <form class="search-form" action="/search" method="GET">
-          <input type="text" name="q" placeholder="Search…" aria-label="Search">
-          <button type="submit"><i class="fas fa-search"></i></button>
-        </form>
-      </div>
+    <% if (success_msg) { %>
+      <div class="alert success"><i class="fas fa-check-circle"></i> <%= success_msg %></div>
+    <% } %>
+    <% if (error_msg) { %>
+      <div class="alert error"><i class="fas fa-exclamation-circle"></i> <%= error_msg %></div>
+    <% } %>
 
-      <!-- Added search popup -->
-      <div class="search-popup" id="searchPopup">
-        <form action="/search" method="GET">
-          <input type="text" name="q" placeholder="Search for users or blogs…" aria-label="Search">
-          <button type="submit"><i class="fas fa-search"></i></button>
-        </form>
-        <div class="search-results" id="searchResults"></div>
-      </div>
+    <% blogs.forEach(blog => { %>
+      <article class="card">
+        <% if (blog.coverImage) { %>
+          <img src="<%= blog.coverImage %>" alt="cover">
+        <% } %>
 
-      <% if (user) { %>
-        <div class="dropdown">
-          <button class="dropdown-toggle">
-            <img src="<%= user.profileImageURL || '/images/default.png' %>" alt="avatar">
-            <%= user.fullname %>
-            <i class="fas fa-chevron-down"></i>
-          </button>
-          <div class="dropdown-menu">
-            <a href="/profile"><i class="fas fa-user"></i> Profile</a>
-            <a href="/settings"><i class="fas fa-cog"></i> Settings</a>
-            <a href="/user/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
-          </div>
+        <h2><a href="/blog/<%= blog._id %>"><%= blog.title %></a></h2>
+        <p style="color: var(--soft); font-size: .95rem; line-height: 1.5;"><%= blog.body.substring(0,180) %>…</p>
+
+        <div class="meta">
+          <i class="fas fa-user"></i>
+          <a href="/profile/<%= blog.createdBy._id %>"><%= blog.createdBy.fullname %></a>
+          <i class="fas fa-clock" style="margin-left: .75rem;"></i> <%= moment(blog.createdAt).fromNow() %>
         </div>
-      <% } %>
 
-      <button class="hamburger" id="hamburger"><i class="fas fa-bars"></i></button>
+        <div class="actions">
+          <% if (user) { %>
+            <form action="/blog/<%= blog._id %>/like" method="POST">
+              <button class="btn like <%= blog.likes.includes(user._id) ? 'liked' : '' %>">
+                <i class="fas <%= blog.likes.includes(user._id) ? 'fa-heart' : 'fa-heart-broken' %>"></i>
+                <%= blog.likes.includes(user._id) ? 'Liked' : 'Like' %> (<%= blog.likes.length %>)
+              </button>
+            </form>
+
+            <% if (user._id.toString() !== blog.createdBy._id.toString()) { %>
+              <form action="<%= blog.isFollowing ? '/user/unfollow/' : '/user/follow/' %><%= blog.createdBy._id %>" method="POST">
+                <button class="btn follow <%= blog.isFollowing ? 'following' : '' %>">
+                  <i class="fas <%= blog.isFollowing ? 'fa-user-minus' : 'fa-user-plus' %>"></i>
+                  <%= blog.isFollowing ? 'Following' : 'Follow' %>
+                </button>
+              </form>
+            <% } %>
+
+            <button class="btn comment" data-blog-id="<%= blog._id %>">
+              <i class="fas fa-comment"></i> Comment (<%= blog.comments.length %>)
+            </button>
+          <% } %>
+          <a class="btn view" href="/blog/<%= blog._id %>">
+            <i class="fas fa-eye"></i> View Post
+          </a>
+        </div>
+      </article>
+    <% }) %>
+  </main>
+
+  <div class="comment-popup" id="commentPopup">
+    <div class="comment-popup-content">
+      <button class="close-btn" id="closePopup"><i class="fas fa-times"></i></button>
+      <h3>Add a Comment</h3>
+      <form id="commentForm" method="POST">
+        <textarea name="content" required placeholder="Add a comment…" aria-label="Comment"></textarea>
+        <button type="submit" class="submit-btn"><i class="fas fa-comment"></i> Post Comment</button>
+      </form>
     </div>
-  </nav>
-</header>
+  </div>
 
-<script>
-  const hamburger = document.getElementById('hamburger');
-  const navLinks = document.getElementById('navLinks');
-  const searchTrigger = document.getElementById('searchTrigger');
-  const searchPopup = document.getElementById('searchPopup');
-  const searchResults = document.getElementById('searchResults');
-  
-  hamburger.addEventListener('click', () => {
-    navLinks.classList.toggle('open');
-  });
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const buttons = document.querySelectorAll('.btn.comment');
+      const popup   = document.getElementById('commentPopup');
+      const form    = document.getElementById('commentForm');
+      const close   = document.getElementById('closePopup');
 
-  // Search popup toggle on double click
-  searchTrigger.addEventListener('dblclick', () => {
-    searchPopup.style.display = searchPopup.style.display === 'block' ? 'none' : 'block';
-    if (searchPopup.style.display === 'block') {
-      searchPopup.querySelector('input').focus();
-    }
-  });
-
-  // Function to fetch unread notification count and update badge
-  async function updateNotificationBadge() {
-    try {
-      const response = await fetch('/notification/unread-count');
-      const data = await response.json();
-      if (data.success) {
-        const badge = document.getElementById('notificationBadge');
-        if (badge) {
-          badge.setAttribute('data-count', data.count);
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching notification count:', err);
-    }
-  }
-
-  // Clear notifications when visiting notification page
-  async function clearNotifications() {
-    if (window.location.pathname === '/notification') {
-      try {
-        await fetch('/notification/mark-all-read', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          }
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.blogId;
+          form.action = `/comment/${id}`;
+          popup.classList.add('active');
+          form.content.focus();
         });
-        const badge = document.getElementById('notificationBadge');
-        if (badge) {
-          badge.setAttribute('data-count', '0');
-        }
-      } catch (err) {
-        console.error('Error marking notifications as read:', err);
-      }
-    }
-  }
+      });
 
-  // Search popup functionality
-  async function handleSearch(event) {
-    event.preventDefault();
-    const query = event.target.querySelector('input[name="q"]').value;
-    try {
-      const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
-      const data = await response.json();
-      displaySearchResults(data);
-    } catch (err) {
-      console.error('Error searching:', err);
-    }
-  }
-
-  function displaySearchResults(results) {
-    searchResults.innerHTML = '';
-    if (results.length === 0) {
-      searchResults.innerHTML = '<p style="color: var(--soft); text-align: center;">No results found</p>';
-      return;
-    }
-    
-    results.forEach(result => {
-      const card = document.createElement('div');
-      card.className = 'search-result-card';
-      card.innerHTML = `
-        <h3>${result.title || result.fullname}</h3>
-        <p>${result.description || result.username}</p>
-      `;
-      searchResults.appendChild(card);
+      close.addEventListener('click',0 => popup.classList.remove('active'));
+      popup.addEventListener('click', e => { if (e.target === popup) popup.classList.remove('active'); });
     });
-  }
-
-  // Attach search handler to both forms
-  document.querySelectorAll('form[action="/search"]').forEach(form => {
-    form.addEventListener('submit', handleSearch);
-  });
-
-  // Run immediately
-  updateNotificationBadge();
-  clearNotifications(); // Added to clear notifications on page load if on notifications page
-
-  // Periodic checks
-  setInterval(updateNotificationBadge, 30000);
-
-  // Refresh page on new notifications (only on notifications page)
-  if (window.location.pathname === '/notification') {
-    let lastCount = 0;
-    async function checkForNewNotifications() {
-      try {
-        const response = await fetch('/notification/unread-count');
-        const data = await response.json();
-        if (data.success && data.count > lastCount) {
-          window.location.reload();
-        }
-        lastCount = data.count;
-      } catch (err) {
-        console.error('Error checking notifications:', err);
-      }
-    }
-    checkForNewNotifications();
-    setInterval(checkForNewNotifications, 30000);
-  }
-</script>
+  </script>
 </body>
 </html>
