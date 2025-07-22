@@ -1,3 +1,4 @@
+// routes/notification.js
 const { Router } = require("express");
 const Notification = require("../models/notification");
 const User = require("../models/user");
@@ -36,6 +37,26 @@ router.get("/", async (req, res) => {
   }
 });
 
+// GET /notification/unread-count
+router.get("/unread-count", async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Please log in" });
+    }
+
+    const count = await Notification.countDocuments({
+      recipient: req.user._id,
+      status: "PENDING",
+      isRead: false,
+    });
+
+    return res.status(200).json({ success: true, count });
+  } catch (err) {
+    console.error("Error fetching unread notification count:", err);
+    return res.status(500).json({ error: "Failed to fetch unread notifications" });
+  }
+});
+
 // POST /notification/accept/:id
 router.post("/accept/:id", async (req, res) => {
   try {
@@ -53,9 +74,9 @@ router.post("/accept/:id", async (req, res) => {
     }
 
     await Promise.all([
-      User.findByIdAndUpdate(req.user._id, { $addToSet: { followers: notification.sender } }, { new: true }),
+     级User.findByIdAndUpdate(req.user._id, { $addToSet: { followers: notification.sender } }, { new: true }),
       User.findByIdAndUpdate(notification.sender, { $addToSet: { following: req.user._id } }, { new: true }),
-      Notification.findByIdAndUpdate(req.params.id, { status: "ACCEPTED" }, { new: true }),
+      Notification.findByIdAndUpdate(req.params.id, { status: "ACCEPTED", isRead: true }, { new: true }),
     ]);
 
     return res.redirect("/notification?success_msg=Follow request accepted");
@@ -81,7 +102,7 @@ router.post("/reject/:id", async (req, res) => {
       return res.redirect("/notification?error_msg=Invalid or already processed notification");
     }
 
-    await Notification.findByIdAndUpdate(req.params.id, { status: "REJECTED" }, { new: true });
+    await Notification.findByIdAndUpdate(req.params.id, { status: "REJECTED", isRead: true }, { new: true });
     return res.redirect("/notification?success_msg=Follow request rejected");
   } catch (err) {
     console.error("Error rejecting follow request:", err);
@@ -101,7 +122,7 @@ router.post("/read/:id", async (req, res) => {
       return res.redirect("/notification?error_msg=Notification not found or unauthorized");
     }
 
-    await Notification.findByIdAndUpdate(req.params.id, { status: "READ" }, { new: true });
+    await Notification.findByIdAndUpdate(req.params.id, { status: "READ", isRead: true }, { new: true });
     return res.redirect("/notification?success_msg=Notification marked as read");
   } catch (err) {
     console.error("Error marking notification as read:", err);
