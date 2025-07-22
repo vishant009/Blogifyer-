@@ -1,5 +1,7 @@
 const { Router } = require("express");
 const Comment = require("../models/comments");
+const Blog = require("../models/blog"); // Added
+const fetch = require("node-fetch"); // Added
 
 const router = Router();
 
@@ -9,12 +11,27 @@ router.post("/:blogId", async (req, res) => {
     if (!req.user) {
       return res.redirect(`/blog/${req.params.blogId}?error_msg=Please log in to add a comment`);
     }
-    await Comment.create({
+    const comment = await Comment.create({
       content: req.body.content,
       blogId: req.params.blogId,
       createdBy: req.user._id,
       likes: [],
     });
+
+    // Trigger push notification for new comment
+    const blog = await Blog.findById(req.params.blogId);
+    await fetch(`http://localhost:${process.env.PORT}/notificationPush/trigger`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "NEW_COMMENT",
+        blogId: req.params.blogId,
+        commentId: comment._id,
+        senderId: req.user._id,
+        recipientId: blog.createdBy,
+      }),
+    });
+
     return res.redirect(`/blog/${req.params.blogId}?success_msg=Comment added successfully`);
   } catch (err) {
     console.error("Error adding comment:", err);
@@ -55,6 +72,20 @@ router.post("/:commentId/like", async (req, res) => {
     }
     comment.likes.push(req.user._id);
     await comment.save();
+
+    // Trigger push notification for comment like
+    await fetch(`http://localhost:${process.env.PORT}/notificationPush/trigger`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "LIKE_COMMENT",
+        blogId: comment.blogId,
+        commentId: req.params.commentId,
+        senderId: req.user._id,
+        recipientId: comment.createdBy,
+      }),
+    });
+
     return res.redirect(`/blog/${comment.blogId}?success_msg=Comment liked successfully`);
   } catch (err) {
     console.error("Error liking comment:", err);
