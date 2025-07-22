@@ -64,7 +64,7 @@ router.post("/accept/:id", async (req, res) => {
       return res.redirect("/user/signin?error_msg=Please log in to accept follow requests");
     }
 
-    const notification = await Notification.findById(req.params.id);
+    const notification = await Notification.findById(req.params.id).populate("sender", "fullname");
     if (!notification || notification.recipient.toString() !== req.user._id.toString()) {
       return res.redirect("/notification?error_msg=Notification not found or unauthorized");
     }
@@ -73,13 +73,14 @@ router.post("/accept/:id", async (req, res) => {
       return res.redirect("/notification?error_msg=Invalid or already processed notification");
     }
 
+    // Update followers/following lists and notification status atomically
     await Promise.all([
-     级User.findByIdAndUpdate(req.user._id, { $addToSet: { followers: notification.sender } }, { new: true }),
-      User.findByIdAndUpdate(notification.sender, { $addToSet: { following: req.user._id } }, { new: true }),
+      User.findByIdAndUpdate(req.user._id, { $addToSet: { followers: notification.sender._id } }, { new: true }),
+      User.findByIdAndUpdate(notification.sender._id, { $addToSet: { following: req.user._id } }, { new: true }),
       Notification.findByIdAndUpdate(req.params.id, { status: "ACCEPTED", isRead: true }, { new: true }),
     ]);
 
-    return res.redirect("/notification?success_msg=Follow request accepted");
+    return res.redirect(`/profile/${notification.sender._id}?success_msg=Follow request from ${notification.sender.fullname} accepted`);
   } catch (err) {
     console.error("Error accepting follow request:", err);
     return res.redirect("/notification?error_msg=Failed to accept follow request");
@@ -93,7 +94,7 @@ router.post("/reject/:id", async (req, res) => {
       return res.redirect("/user/signin?error_msg=Please log in to reject follow requests");
     }
 
-    const notification = await Notification.findById(req.params.id);
+    const notification = await Notification.findById(req.params.id).populate("sender", "fullname");
     if (!notification || notification.recipient.toString() !== req.user._id.toString()) {
       return res.redirect("/notification?error_msg=Notification not found or unauthorized");
     }
@@ -103,7 +104,7 @@ router.post("/reject/:id", async (req, res) => {
     }
 
     await Notification.findByIdAndUpdate(req.params.id, { status: "REJECTED", isRead: true }, { new: true });
-    return res.redirect("/notification?success_msg=Follow request rejected");
+    return res.redirect(`/profile/${notification.sender._id}?success_msg=Follow request from ${notification.sender.fullname} rejected`);
   } catch (err) {
     console.error("Error rejecting follow request:", err);
     return res.redirect("/notification?error_msg=Failed to reject follow request");
