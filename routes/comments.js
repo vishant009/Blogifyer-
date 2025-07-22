@@ -1,6 +1,6 @@
 const { Router } = require("express");
 const Comment = require("../models/comments");
-const Blog = require("../models/models/blog");
+const Blog = require("../models/blog");
 const fetch = require("node-fetch");
 
 const router = Router();
