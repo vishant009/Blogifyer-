@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="user-id" content="<%= user ? user._id : '' %>">
   <title>Notifications | Blogify</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 </head>
@@ -137,22 +138,6 @@
                     <i class="fas fa-times"></i> Reject
                   </button>
                 </form>
-              <% } else if (!notification.isRead && notification.type !== 'FOLLOW_REQUEST') { %>
-                <form action="/notification/read/<%= notification._id %>?_method=POST" method="POST" style="display: inline;">
-                  <input type="hidden" name="_method" value="POST">
-                  <button type="submit" style="
-                    padding: 0.5rem 1rem;
-                    background-color: #3498db;
-                    color: #ecf0f1;
-                    border: none;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 0.9rem;
-                    transition: background-color 0.3s, transform 0.2s;
-                  " onmouseover="this.style.backgroundColor='#2980b9'; this.style.transform='scale(1.05)'" onmouseout="this.style.backgroundColor='#3498db'; this.style.transform='scale(1)'">
-                    <i class="fas fa-check-circle"></i> Mark as Read
-                  </button>
-                </form>
               <% } %>
             </div>
           </li>
@@ -168,5 +153,6 @@
       button { width: 100%; margin-bottom: 0.5rem; }
     }
   </style>
+  <script src="/push.js"></script>
 </body>
 </html>
