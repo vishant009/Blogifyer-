@@ -248,12 +248,14 @@
       const commentPopup = document.getElementById('commentPopup');
       const closePopup = document.getElementById('closePopup');
       const commentForm = document.getElementById('commentForm');
+      const textarea = commentForm.querySelector('textarea[name="content"]');
 
       commentButtons.forEach(button => {
         button.addEventListener('click', () => {
           const blogId = button.getAttribute('data-blog-id');
           commentForm.action = `/comment/${blogId}`;
           commentPopup.classList.add('active');
+          textarea.focus();
         });
       });
 
@@ -271,19 +273,31 @@
 
       commentForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const content = textarea.value.trim();
+        if (!content) {
+          alert('Please enter a comment before submitting.');
+          return;
+        }
+
         const formData = new FormData(commentForm);
         try {
           const response = await fetch(commentForm.action, {
             method: 'POST',
-            body: formData
+            body: formData,
+            headers: {
+              'Accept': 'application/json', // Expect JSON response
+            },
           });
+
           if (response.ok) {
             window.location.reload(); // Refresh to show new comment
           } else {
-            alert('Failed to post comment. Please try again.');
+            const data = await response.json();
+            alert(data.error || 'Failed to post comment. Please try again.');
           }
         } catch (error) {
-          alert('An error occurred. Please try again.');
+          console.error('Error posting comment:', error);
+          alert('An error occurred while posting the comment. Please try again.');
         }
       });
     });
