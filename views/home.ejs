@@ -6,6 +6,7 @@
   <title>Home | Blogify</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <style>
+    /* Existing styles remain unchanged */
     :root {
       --bg: #0f0f11;
       --surface: rgba(255,255,255,.05);
@@ -25,12 +26,10 @@
     .main { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1rem 5rem; display: grid; gap: 2.5rem; }
     .main h1 { display: flex; align-items: center; gap: .6rem; font-size: 2rem; font-weight: 600; }
 
-    /* alert glass boxes */
     .alert { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.2rem; font-size: .95rem; display: flex; align-items: center; gap: .5rem; }
     .alert.success { color: var(--success); }
     .alert.error { color: var(--danger); }
 
-    /* glass card */
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -64,7 +63,6 @@
     .meta { font-size: .85rem; color: var(--soft); display: flex; align-items: center; gap: .5rem; }
     .meta a { color: var(--accent); text-decoration: none; }
 
-    /* actions */
     .actions { display: flex; gap: .75rem; flex-wrap: wrap; }
     .btn {
       padding: .6rem 1.2rem; border-radius: 999px; border: none; font-size: .85rem; font-weight: 600;
@@ -81,7 +79,6 @@
     .btn.comment { background: #3498db; }
     .btn.comment:hover { background: #2980b9; }
 
-    /* comments */
     .comments { border-top: 1px solid var(--border); margin-top: 1.2rem; padding-top: 1.2rem; }
     .comment { display: flex; gap: .8rem; margin-bottom: .8rem; }
     .comment img { width: 34px; height: 34px; border-radius: 50%; }
@@ -89,7 +86,6 @@
     .comment-body strong { font-size: .95rem; }
     .comment-body span { font-size: .8rem; color: var(--soft); }
 
-    /* comment popup */
     .comment-popup {
       display: none;
       position: fixed;
@@ -236,6 +232,7 @@
       <button class="close-btn" id="closePopup"><i class="fas fa-times"></i></button>
       <h3>Add a Comment</h3>
       <form id="commentForm" action="" method="POST">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <textarea name="content" required placeholder="Add a comment..." aria-label="Comment"></textarea>
         <button type="submit" class="submit-btn"><i class="fas fa-comment"></i> Post Comment</button>
       </form>
@@ -285,14 +282,14 @@
             method: 'POST',
             body: formData,
             headers: {
-              'Accept': 'application/json', // Expect JSON response
+              'Accept': 'application/json',
             },
           });
 
-          if (response.ok) {
-            window.location.reload(); // Refresh to show new comment
+          const data = await response.json();
+          if (response.ok && data.redirect) {
+            window.location.href = data.redirect; // Follow server redirect
           } else {
-            const data = await response.json();
             alert(data.error || 'Failed to post comment. Please try again.');
           }
         } catch (error) {
