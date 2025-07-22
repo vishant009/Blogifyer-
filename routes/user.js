@@ -60,13 +60,12 @@ router.post("/signup", async (req, res) => {
     const verificationCode = generateCode();
     const signupToken = crypto.randomBytes(16).toString("hex");
 
-    // Store user data temporarily
     pendingSignups.set(signupToken, {
       fullname,
       email,
       password,
       verificationCode,
-      verificationCodeExpires: Date.now() + 3600000, // 1 hour expiry
+      verificationCodeExpires: Date.now() + 3600000,
     });
 
     const verificationUrl = `http://${req.headers.host}/user/verify-email/${signupToken}/${verificationCode}`;
@@ -117,7 +116,6 @@ router.get("/verify-email/:id/:code", async (req, res) => {
     if (pendingUser.verificationCode !== code) throw new Error("Invalid verification code");
     if (pendingUser.verificationCodeExpires < Date.now()) throw new Error("Verification code expired");
 
-    // Create user in the database
     const user = await User.create({
       fullname: pendingUser.fullname,
       email: pendingUser.email,
@@ -127,7 +125,6 @@ router.get("/verify-email/:id/:code", async (req, res) => {
       isVerified: true,
     });
 
-    // Clean up pending signup
     pendingSignups.delete(signupToken);
 
     return res.redirect("/user/signin?success_msg=Email verified successfully");
@@ -158,7 +155,6 @@ router.post("/verify-email/:id/:code", async (req, res) => {
     if (pendingUser.verificationCode !== code) throw new Error("Invalid verification code");
     if (pendingUser.verificationCodeExpires < Date.now()) throw new Error("Verification code expired");
 
-    // Create user in the database
     const user = await User.create({
       fullname: pendingUser.fullname,
       email: pendingUser.email,
@@ -168,12 +164,12 @@ router.post("/verify-email/:id/:code", async (req, res) => {
       isVerified: true,
     });
 
-    // Clean up pending signup
     pendingSignups.delete(signupToken);
 
     return res.redirect("/user/signin?success_msg=Email verified successfully");
   } catch (error) {
-    console.error("Verify email error:", error);
+    console.error("Verify email error:", err
+System: or);
     return res.render("signup", {
       title: "Sign Up",
       user: req.user || null,
@@ -229,7 +225,7 @@ router.post("/forgot-password", async (req, res) => {
 
     const resetCode = generateCode();
     user.resetPasswordToken = resetCode;
-    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour expiry
+    user.resetPasswordExpires = Date.now() + 3600000;
     await user.save();
 
     const resetUrl = `http://${req.headers.host}/user/reset-password/${user._id}/${resetCode}`;
@@ -328,7 +324,7 @@ router.post("/reset-password/:id/:code", async (req, res) => {
     if (user.resetPasswordToken !== code) throw new Error("Invalid reset code");
     if (user.resetPasswordExpires < Date.now()) throw new Error("Reset code expired");
 
-    user.password = password; // Password will be hashed in pre-save hook
+    user.password = password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
@@ -371,6 +367,13 @@ router.post("/follow/:id", async (req, res) => {
       return res.redirect(`/?error_msg=User not found`);
     }
 
+    // Check if user is already following
+    const isFollowing = userToFollow.followers.includes(currentUserId);
+    if (isFollowing) {
+      return res.redirect(`/profile/${userIdToFollow}?error_msg=You are already following ${userToFollow.fullname}`);
+    }
+
+    // Check for existing pending follow request
     const existingNotification = await Notification.findOne({
       sender: currentUserId,
       recipient: userIdToFollow,
@@ -379,9 +382,10 @@ router.post("/follow/:id", async (req, res) => {
     });
 
     if (existingNotification) {
-      return res.redirect(`/?error_msg=Follow request already sent`);
+      return res.redirect(`/profile/${userIdToFollow}?error_msg=Follow request already sent`);
     }
 
+    // Create follow request notification
     await Notification.create({
       recipient: userIdToFollow,
       sender: currentUserId,
@@ -428,6 +432,15 @@ router.post("/unfollow/:id", async (req, res) => {
       return res.redirect(`/?error_msg=User not found`);
     }
 
+    // Remove pending follow request if it exists
+    await Notification.findOneAndDelete({
+      sender: currentUserId,
+      recipient: userIdToUnfollow,
+      type: "FOLLOW_REQUEST",
+      status: "PENDING",
+    });
+
+    // Update followers and following lists
     await Promise.all([
       User.findByIdAndUpdate(currentUserId, { $pull: { following: userIdToUnfollow } }, { new: true }),
       User.findByIdAndUpdate(userIdToUnfollow, { $pull: { followers: currentUserId } }, { new: true }),
