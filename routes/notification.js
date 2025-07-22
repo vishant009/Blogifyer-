@@ -73,7 +73,6 @@ router.post("/accept/:id", async (req, res) => {
       return res.redirect("/notification?error_msg=Invalid or already processed notification");
     }
 
-    // Update followers/following lists and notification status atomically
     await Promise.all([
       User.findByIdAndUpdate(req.user._id, { $addToSet: { followers: notification.sender._id } }, { new: true }),
       User.findByIdAndUpdate(notification.sender._id, { $addToSet: { following: req.user._id } }, { new: true }),
@@ -92,7 +91,7 @@ router.post("/reject/:id", async (req, res) => {
   try {
     if (!req.user) {
       return res.redirect("/user/signin?error_msg=Please log in to reject follow requests");
-    }
+  }
 
     const notification = await Notification.findById(req.params.id).populate("sender", "fullname");
     if (!notification || notification.recipient.toString() !== req.user._id.toString()) {
