@@ -1,16 +1,17 @@
+<!-- views/layout.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="user-id" content="<%= user ? user._id : '' %>"> <!-- Add to identify logged-in user -->
+  <meta name="user-id" content="<%= user ? user._id : '' %>">
+  <meta name="vapid-pub" content="<%= process.env.VAPID_PUBLIC_KEY %>">
   <title><%= title || 'Blogify' %></title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-  
 </head>
 <body style="background-color: #1a2634; color: #ecf0f1; margin: 0; font-family: 'Arial', sans-serif;">
   <%- include('partials/header', { user }) %>
   <%- body %>
-  <script src="/js/push.js"></script>
+  <script src="/push.js"></script>
 </body>
 </html>
