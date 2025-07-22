@@ -1,3 +1,4 @@
+<!-- views/partials/header.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,8 +22,19 @@
     .nav{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem}
     .logo{font-size:1.6rem;font-weight:700;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:.5rem}
     .nav-links{display:flex;align-items:center;gap:2rem;list-style:none}
-    .nav-links a{color:var(--soft);text-decoration:none;font-size:.95rem;transition:color .2s var(--ease)}
+    .nav-links a{color:var(--soft);text-decoration:none;font-size:.95rem;transition:color .2s var(--ease);position:relative}
     .nav-links a:hover{color:var(--accent)}
+    .nav-links a.notification-badge::after{
+      content: attr(data-count);
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #e74c3c;
+      color: #fff;
+      border-radius: 50%;
+      padding: 2px 6px;
+      font-size: 0.7rem;
+    }
     .search-form{display:flex;align-items:center;gap:.5rem}
     .search-form input{padding:.5rem .75rem;border:1px solid var(--border);border-radius:var(--radius);background:var(--up);color:var(--text);font-size:.9rem}
     .search-form button{padding:.55rem;border:none;background:var(--accent);color:#fff;border-radius:var(--radius);cursor:pointer}
@@ -46,52 +58,54 @@
   <nav class="nav">
     <a href="/" class="logo"><i class="fas fa-blog"></i> Blogify</a>
 
-  <!-- desktop links -->
-  <ul class="nav-links" id="navLinks">
-    <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
-    <% if (user) { %>
-      <li><a href="/blog/addBlog"><i class="fas fa-plus"></i> Add Blog</a></li>
-      <li><a href="/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-    <% } else { %>
-      <li><a href="/user/signin"><i class="fas fa-sign-in-alt"></i> Sign In</a></li>
-      <li><a href="/user/signup"><i class="fas fa-user-plus"></i> Sign Up</a></li>
-    <% } %>
-  </ul>
+    <!-- desktop links -->
+    <ul class="nav-links" id="navLinks">
+      <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
+      <% if (user) { %>
+        <li><a href="/blog/addBlog"><i class="fas fa-plus"></i> Add Blog</a></li>
+        <li><a href="/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+      <% } else { %>
+        <li><a href="/user/signin"><i class="fas fa-sign-in-alt"></i> Sign In</a></li>
+        <li><a href="/user/signup"><i class="fas fa-user-plus"></i> Sign Up</a></li>
+      <% } %>
+    </ul>
 
-  <div style="display:flex;align-items:center;gap:1rem">
-    <!-- search -->
-    <form class="search-form" action="/search" method="GET">
-      <input type="text" name="q" placeholder="Search…" aria-label="Search">
-      <button type="submit"><i class="fas fa-search"></i></button>
-    </form>
+    <div style="display:flex;align-items:center;gap:1rem">
+      <!-- search -->
+      <form class="search-form" action="/search" method="GET">
+        <input type="text" name="q" placeholder="Search…" aria-label="Search">
+        <button type="submit"><i class="fas fa-search"></i></button>
+      </form>
 
-    <!-- profile dropdown -->
-    <% if (user) { %>
-      <div class="dropdown">
-        <button class="dropdown-toggle">
-          <img src="<%= user.profileImageURL %>" alt="avatar">
-          <%= user.fullname %>
-          <i class="fas fa-chevron-down"></i>
-        </button>
-        <div class="dropdown-menu">
-          <a href="/profile"><i class="fas fa-user"></i> Profile</a>
-          <a href="/notification"><i class="fas fa-bell"></i> Notifications</a>
-          <a href="/settings"><i class="fas fa-cog"></i> Settings</a>
-          <a href="/user/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+      <!-- profile dropdown -->
+      <% if (user) { %>
+        <div class="dropdown">
+          <button class="dropdown-toggle">
+            <img src="<%= user.profileImageURL %>" alt="avatar">
+            <%= user.fullname %>
+            <i class="fas fa-chevron-down"></i>
+          </button>
+          <div class="dropdown-menu">
+            <a href="/profile"><i class="fas fa-user"></i> Profile</a>
+            <a href="/notification" class="notification-badge" data-count="0"><i class="fas fa-bell"></i> Notifications</a>
+            <a href="/settings"><i class="fas fa-cog"></i> Settings</a>
+            <a href="/user/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+          </div>
         </div>
-      </div>
-    <% } %>
+      <% } %>
 
-    <!-- hamburger -->
-    <button class="hamburger" id="hamburger"><i class="fas fa-bars"></i></button>
-  </div>
-</nav>
+      <!-- hamburger -->
+      <button class="hamburger" id="hamburger"><i class="fas fa-bars"></i></button>
+    </div>
+  </nav>
 </header>
 
 <script>
   const hamburger = document.getElementById('hamburger');
-  const navLinks  = document.getElementById('navLinks');
+  const navLinks = document.getElementById('navLinks');
   hamburger.addEventListener('click', () => {
     navLinks.classList.toggle('open');
   });
 </script>
+</body>
+</html>
