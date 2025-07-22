@@ -6,7 +6,6 @@
   <title>Home | Blogify</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <style>
-    /* Existing styles remain unchanged */
     :root {
       --bg: #0f0f11;
       --surface: rgba(255,255,255,.05);
@@ -232,7 +231,6 @@
       <button class="close-btn" id="closePopup"><i class="fas fa-times"></i></button>
       <h3>Add a Comment</h3>
       <form id="commentForm" action="" method="POST">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <textarea name="content" required placeholder="Add a comment..." aria-label="Comment"></textarea>
         <button type="submit" class="submit-btn"><i class="fas fa-comment"></i> Post Comment</button>
       </form>
@@ -288,7 +286,7 @@
 
           const data = await response.json();
           if (response.ok && data.redirect) {
-            window.location.href = data.redirect; // Follow server redirect
+            window.location.href = data.redirect;
           } else {
             alert(data.error || 'Failed to post comment. Please try again.');
           }
