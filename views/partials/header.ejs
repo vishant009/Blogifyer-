@@ -65,6 +65,7 @@
       <% if (user) { %>
         <li><a href="/blog/addBlog"><i class="fas fa-plus"></i> Add Blog</a></li>
         <li><a href="/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+        <li><a href="/notification" class="notification-badge" id="notificationBadge" data-count="0"><i class="fas fa-bell"></i> Notifications</a></li>
       <% } else { %>
         <li><a href="/user/signin"><i class="fas fa-sign-in-alt"></i> Sign In</a></li>
         <li><a href="/user/signup"><i class="fas fa-user-plus"></i> Sign Up</a></li>
@@ -86,7 +87,6 @@
           </button>
           <div class="dropdown-menu">
             <a href="/profile"><i class="fas fa-user"></i> Profile</a>
-            <a href="/notification" class="notification-badge" data-count="0"><i class="fas fa-bell"></i> Notifications</a>
             <a href="/settings"><i class="fas fa-cog"></i> Settings</a>
             <a href="/user/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
           </div>
@@ -104,6 +104,45 @@
   hamburger.addEventListener('click', () => {
     navLinks.classList.toggle('open');
   });
+
+  // Function to fetch unread notification count and update badge
+  async function updateNotificationBadge() {
+    try {
+      const response = await fetch('/notification/unread-count');
+      const data = await response.json();
+      if (data.success) {
+        const badge = document.getElementById('notificationBadge');
+        if (badge) {
+          badge.setAttribute('data-count', data.count);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching notification count:', err);
+    }
+  }
+
+  // Run immediately and every 30 seconds
+  updateNotificationBadge();
+  setInterval(updateNotificationBadge, 30000);
+
+  // Refresh page on new notifications (only on notifications page)
+  if (window.location.pathname === '/notification') {
+    let lastCount = 0;
+    async function checkForNewNotifications() {
+      try {
+        const response = await fetch('/notification/unread-count');
+        const data = await response.json();
+        if (data.success && data.count > lastCount) {
+          window.location.reload();
+        }
+        lastCount = data.count;
+      } catch (err) {
+        console.error('Error checking notifications:', err);
+      }
+    }
+    checkForNewNotifications();
+    setInterval(checkForNewNotifications, 30000);
+  }
 </script>
 </body>
 </html>
