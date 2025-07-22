@@ -168,8 +168,7 @@ router.post("/verify-email/:id/:code", async (req, res) => {
 
     return res.redirect("/user/signin?success_msg=Email verified successfully");
   } catch (error) {
-    console.error("Verify email error:", err
-System: or);
+    console.error("Verify email error:", error); // Fixed syntax error
     return res.render("signup", {
       title: "Sign Up",
       user: req.user || null,
@@ -367,13 +366,11 @@ router.post("/follow/:id", async (req, res) => {
       return res.redirect(`/?error_msg=User not found`);
     }
 
-    // Check if user is already following
     const isFollowing = userToFollow.followers.includes(currentUserId);
     if (isFollowing) {
       return res.redirect(`/profile/${userIdToFollow}?error_msg=You are already following ${userToFollow.fullname}`);
     }
 
-    // Check for existing pending follow request
     const existingNotification = await Notification.findOne({
       sender: currentUserId,
       recipient: userIdToFollow,
@@ -385,7 +382,6 @@ router.post("/follow/:id", async (req, res) => {
       return res.redirect(`/profile/${userIdToFollow}?error_msg=Follow request already sent`);
     }
 
-    // Create follow request notification
     await Notification.create({
       recipient: userIdToFollow,
       sender: currentUserId,
@@ -395,8 +391,7 @@ router.post("/follow/:id", async (req, res) => {
       isRead: false,
     });
 
-    // Trigger push notification for follow request
-    await fetch(`http://localhost:${process.env.PORT}/notificationPush/trigger`, {
+    await fetch(`http://${req.headers.host}/notificationPush/trigger`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -432,7 +427,6 @@ router.post("/unfollow/:id", async (req, res) => {
       return res.redirect(`/?error_msg=User not found`);
     }
 
-    // Remove pending follow request if it exists
     await Notification.findOneAndDelete({
       sender: currentUserId,
       recipient: userIdToUnfollow,
@@ -440,7 +434,6 @@ router.post("/unfollow/:id", async (req, res) => {
       status: "PENDING",
     });
 
-    // Update followers and following lists
     await Promise.all([
       User.findByIdAndUpdate(currentUserId, { $pull: { following: userIdToUnfollow } }, { new: true }),
       User.findByIdAndUpdate(userIdToUnfollow, { $pull: { followers: currentUserId } }, { new: true }),
