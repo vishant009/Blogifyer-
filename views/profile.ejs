@@ -269,7 +269,7 @@
         <% if (blogs && blogs.length > 0) { %>
           <% blogs.forEach(blog => { %>
             <div class="blog-card">
-              <img src="<%= blog.coverImageURL || '/default-blog.png' %>" alt="<%= blog.title %> Cover Image" />
+              <img src="<%= blog.coverImage || '/default-blog.png' %>" alt="<%= blog.title %> Cover Image" />
               <div class="blog-content">
                 <h3 class="blog-title">
                   <a href="/blog/<%= blog._id %>" style="
