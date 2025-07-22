@@ -1,165 +1,233 @@
 // routes/notificationPush.js
 const { Router } = require("express");
-const webpush      = require("web-push");
-const PushSub      = require("../models/notificationPush");
+const webpush = require("web-push");
+const PushNotification = require("../models/notificationPush");
 const Notification = require("../models/notification");
-const User         = require("../models/user");
-const Blog         = require("../models/blog");
-const Comment      = require("../models/comments");
+const User = require("../models/user");
+const Blog = require("../models/blog");
+const Comment = require("../models/comments");
 
 const router = Router();
 
-// 1️⃣  Initialise web-push
+// Initialize VAPID keys
 webpush.setVapidDetails(
   "mailto:blogifyer@gmail.com",
   process.env.VAPID_PUBLIC_KEY,
   process.env.VAPID_PRIVATE_KEY
 );
 
-// 2️⃣  Save / update subscription
+// POST /notificationPush/subscribe
 router.post("/subscribe", async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ error: "Login required" });
+    if (!req.user) {
+      return res.status(401).json({ error: "Please log in to subscribe to notifications" });
+    }
 
-    const { subscription } = req.body;
-    if (!subscription?.endpoint) return res.status(400).json({ error: "Bad subscription" });
+    const subscription = req.body.subscription;
+    if (!subscription || !subscription.endpoint || !subscription.keys?.p256dh || !subscription.keys?.auth) {
+      console.error("Invalid subscription data:", subscription);
+      return res.status(400).json({ error: "Invalid subscription data" });
+    }
 
-    await PushSub.findOneAndUpdate(
+    // Save or update subscription
+    const updatedSubscription = await PushNotification.findOneAndUpdate(
       { userId: req.user._id },
-      { subscription },
+      { subscription, updatedAt: new Date() },
       { upsert: true, new: true }
     );
-    res.json({ success: true });
-  } catch (e) {
-    console.error("subscribe error", e);
-    res.status(500).json({ error: "Subscribe failed" });
+
+    console.log(`User ${req.user._id} subscribed to push notifications`);
+
+    // Test push notification to confirm subscription
+    const payload = {
+      title: "Welcome to Blogify Notifications",
+      body: "You have successfully subscribed to push notifications!",
+      url: "/notification",
+    };
+    await webpush.sendNotification(subscription, JSON.stringify(payload)).catch((err) => {
+      console.error("Test notification failed:", err);
+    });
+
+    return res.status(200).json({ success: true, message: "Subscribed to push notifications" });
+  } catch (err) {
+    console.error("Error subscribing to push notifications:", err);
+    return res.status(500).json({ error: "Failed to subscribe to push notifications" });
   }
 });
 
-// 3️⃣  Generic trigger endpoint
+// Utility function to send push notification
+const sendPushNotification = async (userId, payload) => {
+  try {
+    const subscriptionDoc = await PushNotification.findOne({ userId });
+    if (!subscriptionDoc) {
+      console.warn(`No subscription found for user ${userId}`);
+      return;
+    }
+
+    await webpush.sendNotification(subscriptionDoc.subscription, JSON.stringify(payload));
+    console.log(`Push notification sent to user ${userId}`);
+  } catch (err) {
+    console.error(`Error sending push notification to user ${userId}:`, err);
+    if (err.statusCode === 410 || err.statusCode === 404) {
+      console.log(`Removing invalid subscription for user ${userId}`);
+      await PushNotification.deleteOne({ userId });
+    }
+  }
+};
+
+// POST /notificationPush/trigger
 router.post("/trigger", async (req, res) => {
   try {
     const { action, blogId, commentId, senderId, recipientId } = req.body;
-    const sender = await User.findById(senderId);
-    if (!sender) return res.status(404).json({ error: "Sender not found" });
+    if (!action || !senderId) {
+      return res.status(400).json({ error: "Missing required fields: action or senderId" });
+    }
 
-    let payload, recipientIds = [];
+    const sender = await User.findById(senderId);
+    if (!sender) {
+      return res.status(404).json({ error: "Sender not found" });
+    }
+
+    let payload = {};
+    let recipientUserId;
 
     switch (action) {
-      case "NEW_BLOG": {
+      case "NEW_BLOG":
         const blog = await Blog.findById(blogId).populate("createdBy");
         if (!blog) return res.status(404).json({ error: "Blog not found" });
 
         const followers = await User.find({ _id: { $in: blog.createdBy.followers } });
         payload = {
           title: "New Blog Post",
-          body:  `${blog.createdBy.fullname} posted: ${blog.title}`,
-          url:   `/blog/${blog._id}`
+          body: `${blog.createdBy.fullname} posted: ${blog.title}`,
+          url: `/blog/${blog._id}`,
         };
-        recipientIds = followers.map(f => f._id);
 
-        await Notification.insertMany(
-          recipientIds.map(id => ({
-            recipient: id,
+        for (const follower of followers) {
+          await sendPushNotification(follower._id, payload);
+          await Notification.create({
+            recipient: follower._id,
             sender: blog.createdBy._id,
             type: "NEW_BLOG",
             blogId: blog._id,
-            message: payload.body
-          }))
-        );
+            message: `${blog.createdBy.fullname} posted: ${blog.title}`,
+            status: "PENDING",
+            isRead: false,
+          });
+        }
         break;
-      }
 
-      case "LIKE_BLOG": {
-        const blog = await Blog.findById(blogId).populate("createdBy");
-        if (!blog || senderId === blog.createdBy._id.toString()) return res.status(400).json({});
+      case "LIKE_BLOG":
+        const likedBlog = await Blog.findById(blogId).populate("createdBy");
+        if (!likedBlog) return res.status(404).json({ error: "Blog not found" });
+
+        recipientUserId = likedBlog.createdBy._id;
+        if (recipientUserId.toString() === senderId.toString()) {
+          return res.status(400).json({ error: "Cannot notify yourself" });
+        }
 
         payload = {
           title: "Blog Liked",
-          body:  `${sender.fullname} liked: ${blog.title}`,
-          url:   `/blog/${blogId}`
+          body: `${sender.fullname} liked your blog: ${likedBlog.title}`,
+          url: `/blog/${blogId}`,
         };
-        recipientIds = [blog.createdBy._id];
-
+        await sendPushNotification(recipientUserId, payload);
         await Notification.create({
-          recipient: blog.createdBy._id,
+          recipient: recipientUserId,
           sender: senderId,
           type: "LIKE",
           blogId,
-          message: payload.body
+          message: `${sender.fullname} liked your blog: ${likedBlog.title}`,
+          status: "PENDING",
+          isRead: false,
         });
         break;
-      }
 
-      case "NEW_COMMENT": {
+      case "NEW_COMMENT":
         const comment = await Comment.findById(commentId).populate("blogId");
-        if (!comment) return res.status(404).json({ error: "Comment not found" });
-        const blog = await Blog.findById(comment.blogId);
-        if (!blog) return res.status(404).json({ error: "Blog not found" });
-        if (senderId === blog.createdBy.toString()) return res.status(400).json({});
+        if (!comment || !comment.blogId) return res.status(404).json({ error: "Comment or blog not found" });
+
+        recipientUserId = comment.blogId.createdBy;
+        if (recipientUserId.toString() === senderId.toString()) {
+          return res.status(400).json({ error: "Cannot notify yourself" });
+        }
 
         payload = {
           title: "New Comment",
-          body:  `${sender.fullname} commented on: ${blog.title}`,
-          url:   `/blog/${comment.blogId}`
+          body: `${sender.fullname} commented on your blog: ${comment.blogId.title}`,
+          url: `/blog/${comment.blogId._id}`,
         };
-        recipientIds = [blog.createdBy];
-
+        await sendPushNotification(recipientUserId, payload);
         await Notification.create({
-          recipient: blog.createdBy,
+          recipient: recipientUserId,
           sender: senderId,
           type: "NEW_COMMENT",
-          blogId: comment.blogId,
-          message: payload.body
+          blogId: comment.blogId._id,
+          message: `${sender.fullname} commented on your blog: ${comment.blogId.title}`,
+          status: "PENDING",
+          isRead: false,
         });
         break;
-      }
 
-      case "LIKE_COMMENT": {
-        const comment = await Comment.findById(commentId).populate("createdBy");
-        if (!comment) return res.status(404).json({ error: "Comment not found" });
-        if (senderId === comment.createdBy._id.toString()) return res.status(400).json({});
+      case "LIKE_COMMENT":
+        const likedComment = await Comment.findById(commentId).populate("createdBy");
+        if (!likedComment) return res.status(404).json({ error: "Comment not found" });
 
-        const blog = await Blog.findById(comment.blogId);
+        recipientUserId = likedComment.createdBy._id;
+        if (recipientUserId.toString() === senderId.toString()) {
+          return res.status(400).json({ error: "Cannot notify yourself" });
+        }
+
+        const blogForComment = await Blog.findById(likedComment.blogId);
         payload = {
           title: "Comment Liked",
-          body:  `${sender.fullname} liked your comment on: ${blog.title}`,
-          url:   `/blog/${comment.blogId}`
+          body: `${sender.fullname} liked your comment on: ${blogForComment.title}`,
+          url: `/blog/${blogForComment._id}`,
         };
-        recipientIds = [comment.createdBy._id];
-
+        await sendPushNotification(recipientUserId, payload);
         await Notification.create({
-          recipient: comment.createdBy._id,
+          recipient: recipientUserId,
           sender: senderId,
           type: "LIKE_COMMENT",
-          blogId: comment.blogId,
-          message: payload.body
+          blogId: likedComment.blogId,
+          message: `${sender.fullname} liked your comment on: ${blogForComment.title}`,
+          status: "PENDING",
+          isRead: false,
         });
         break;
-      }
 
-      default: return res.status(400).json({ error: "Invalid action" });
-    }
+      case "FOLLOW_REQUEST":
+        const recipient = await User.findById(recipientId);
+        if (!recipient) return res.status(404).json({ error: "Recipient not found" });
 
-    // 4️⃣  Send push to every recipient who has subscribed
-    for (const rid of recipientIds) {
-      const record = await PushSub.findOne({ userId: rid });
-      if (record) {
-        try {
-          await webpush.sendNotification(record.subscription, JSON.stringify(payload));
-        } catch (err) {
-          console.error("Push failed", err);
-          if (err.statusCode === 410 || err.statusCode === 404) {
-            await PushSub.deleteOne({ userId: rid });
-          }
+        if (recipientId.toString() === senderId.toString()) {
+          return res.status(400).json({ error: "Cannot send follow request to yourself" });
         }
-      }
+
+        payload = {
+          title: "New Follow Request",
+          body: `${sender.fullname} wants to follow you`,
+          url: `/notification`,
+        };
+        await sendPushNotification(recipientId, payload);
+        await Notification.create({
+          recipient: recipientId,
+          sender: senderId,
+          type: "FOLLOW_REQUEST",
+          message: `${sender.fullname} wants to follow you`,
+          status: "PENDING",
+          isRead: false,
+        });
+        break;
+
+      default:
+        return res.status(400).json({ error: "Invalid action" });
     }
 
-    res.json({ success: true });
-  } catch (e) {
-    console.error("trigger error", e);
-    res.status(500).json({ error: "Trigger failed" });
+    return res.status(200).json({ success: true, message: "Notifications sent" });
+  } catch (err) {
+    console.error("Error triggering notification:", err);
+    return res.status(500).json({ error: "Failed to trigger notification" });
   }
 });
 
