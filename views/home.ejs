@@ -272,14 +272,18 @@
       commentForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const formData = new FormData(commentForm);
-        const response = await fetch(commentForm.action, {
-          method: 'POST',
-          body: formData
-        });
-        if (response.ok) {
-          window.location.reload(); // Refresh to show new comment
-        } else {
-          alert('Failed to post comment. Please try again.');
+        try {
+          const response = await fetch(commentForm.action, {
+            method: 'POST',
+            body: formData
+          });
+          if (response.ok) {
+            window.location.reload(); // Refresh to show new comment
+          } else {
+            alert('Failed to post comment. Please try again.');
+          }
+        } catch (error) {
+          alert('An error occurred. Please try again.');
         }
       });
     });
