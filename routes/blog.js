@@ -4,6 +4,7 @@ const Comment = require("../models/comments");
 const User = require("../models/user");
 const Notification = require("../models/notification");
 const cloudinaryUpload = require("../middlewares/cloudinaryUpload");
+const fetch = require("node-fetch"); // Added
 
 const router = Router();
 
@@ -54,6 +55,18 @@ router.post("/", cloudinaryUpload.single("coverImage"), async (req, res) => {
       coverImage: req.file ? req.file.path : null, // Cloudinary url
       likes: [],
     });
+
+    // Trigger push notification for new blog
+    await fetch(`http://localhost:${process.env.PORT}/notificationPush/trigger`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "NEW_BLOG",
+        blogId: blog._id,
+        senderId: req.user._id,
+      }),
+    });
+
     return res.redirect(`/blog/${blog._id}?success_msg=Blog created`);
   } catch (err) {
     console.error("Error creating blog:", err);
@@ -128,6 +141,18 @@ router.post("/:id/like", async (req, res) => {
           blogId: req.params.id,
           message: `${req.user.fullname} liked your post: ${blog.title}`,
           isRead: false,
+        });
+
+        // Trigger push notification for blog like
+        await fetch(`http://localhost:${process.env.PORT}/notificationPush/trigger`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "LIKE_BLOG",
+            blogId: req.params.id,
+            senderId: req.user._id,
+            recipientId: blog.createdBy._id,
+          }),
         });
       }
     }
