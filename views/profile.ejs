@@ -4,7 +4,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="user-id" content="<%= user ? user._id : '' %>">
   <meta name="vapid-pub" content="<%= process.env.VAPID_PUBLIC_KEY %>">
   <title><%= profileUser.fullname %>'s Profile | Blogify</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
@@ -382,6 +381,5 @@
       });
     });
   </script>
-  <script src="/push.js"></script>
 </body>
 </html>
