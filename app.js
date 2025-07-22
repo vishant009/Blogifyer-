@@ -5,7 +5,6 @@ const path = require("path");
 const cookieParser = require("cookie-parser");
 const methodOverride = require("method-override");
 const moment = require("moment");
-const csrf = require("csurf"); // Add csurf
 
 const settingsRoute = require("./routes/settings");
 const userRoute = require("./routes/user");
@@ -52,15 +51,8 @@ app.use(methodOverride("_method"));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(cookieParser());
-app.use(csrf({ cookie: true })); // Add CSRF middleware
 app.use(checkForAuthenticationCookie("token"));
 app.use(express.static(path.resolve("./public")));
-
-// Add CSRF token to all rendered views
-app.use((req, res, next) => {
-  res.locals.csrfToken = req.csrfToken();
-  next();
-});
 
 // View Engine
 app.set("view engine", "ejs");
@@ -102,7 +94,6 @@ app.get("/", async (req, res) => {
       blogs: blogsWithComments,
       success_msg: req.query.success_msg || null,
       error_msg: req.query.error_msg || null,
-      csrfToken: req.csrfToken(), // Pass CSRF token to view
     });
   } catch (err) {
     console.error("Error in home route:", err);
@@ -151,7 +142,6 @@ app.get("/search", async (req, res) => {
       query,
       success_msg: req.query.success_msg || null,
       error_msg: req.query.error_msg || null,
-      csrfToken: req.csrfToken(), // Pass CSRF token to view
     });
   } catch (err) {
     console.error("Error in search:", err);
@@ -175,17 +165,7 @@ app.use((req, res) => {
     user: req.user || null,
     error_msg: "Page not found",
     success_msg: null,
-    csrfToken: req.csrfToken(), // Pass CSRF token to view
   });
-});
-
-// CSRF Error Handler
-app.use((err, req, res, next) => {
-  if (err.code === 'EBADCSRFTOKEN') {
-    console.error("CSRF token error:", err);
-    return res.status(403).json({ error: "Invalid CSRF token" });
-  }
-  next(err);
 });
 
 // Start Server
