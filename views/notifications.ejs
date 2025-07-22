@@ -1,3 +1,4 @@
+<!-- views/notifications.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -44,24 +45,21 @@
     <% if (!notifications || notifications.length === 0) { %>
       <p style="color: #ecf0f1;">No notifications yet.</p>
     <% } else { %>
-      <ul style="
-        list-style: none;
-        padding: 0;
-      ">
+      <ul style="list-style: none; padding: 0;">
         <% notifications.forEach(notification => { %>
           <li style="
             display: flex;
             align-items: center;
             padding: 1rem;
             border-bottom: 1px solid #34495e;
-            background-color: #34495e;
+            background-color: <%= notification.isRead ? '#34495e' : '#3b5998' %>;
             border-radius: 4px;
             margin-bottom: 0.5rem;
             transition: transform 0.3s;
           " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
             <% if (notification.sender) { %>
               <a href="/profile/<%= notification.sender._id %>">
-                <img src="<%= notification.sender.profileImageURL || '/default-profile.png' %>" alt="<%= notification.sender.fullname || 'User' %>'s Profile Image" style="
+                <img src="<%= notification.sender.profileImageURL || '/images/default.png' %>" alt="<%= notification.sender.fullname || 'User' %>'s Profile Image" style="
                   width: 40px;
                   height: 40px;
                   border-radius: 50%;
@@ -70,7 +68,7 @@
                 ">
               </a>
             <% } else { %>
-              <img src="/default-profile.png" alt="Unknown User" style="
+              <img src="/images/default.png" alt="Unknown User" style="
                 width: 40px;
                 height: 40px;
                 border-radius: 50%;
@@ -132,7 +130,7 @@
                     <i class="fas fa-times"></i> Reject
                   </button>
                 </form>
-              <% } else if (notification.status !== 'READ') { %>
+              <% } else if (!notification.isRead) { %>
                 <form action="/notification/read/<%= notification._id %>" method="POST" style="display: inline;">
                   <button type="submit" style="
                     padding: 0.5rem 1rem;
@@ -154,7 +152,6 @@
       </ul>
     <% } %>
   </div>
-  <script src="/push.js"></script> <!-- Added -->
   <style>
     @media (max-width: 768px) {
       div[style*='max-width: 800px'] { margin: 1rem; padding: 1rem; }
