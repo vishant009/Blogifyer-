@@ -1,185 +1,165 @@
+// routes/notificationPush.js
 const { Router } = require("express");
-const webpush = require("web-push");
-const PushNotification = require("../models/notificationPush");
+const webpush      = require("web-push");
+const PushSub      = require("../models/notificationPush");
 const Notification = require("../models/notification");
-const User = require("../models/user");
-const Blog = require("../models/blog");
-const Comment = require("../models/comments");
+const User         = require("../models/user");
+const Blog         = require("../models/blog");
+const Comment      = require("../models/comments");
 
 const router = Router();
 
-// Initialize VAPID keys
+// 1️⃣  Initialise web-push
 webpush.setVapidDetails(
   "mailto:blogifyer@gmail.com",
   process.env.VAPID_PUBLIC_KEY,
   process.env.VAPID_PRIVATE_KEY
 );
 
-// POST /notificationPush/subscribe
+// 2️⃣  Save / update subscription
 router.post("/subscribe", async (req, res) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ error: "Please log in to subscribe to notifications" });
-    }
+    if (!req.user) return res.status(401).json({ error: "Login required" });
 
-    const subscription = req.body.subscription;
-    if (!subscription || !subscription.endpoint || !subscription.keys.p256dh || !subscription.keys.auth) {
-      return res.status(400).json({ error: "Invalid subscription data" });
-    }
+    const { subscription } = req.body;
+    if (!subscription?.endpoint) return res.status(400).json({ error: "Bad subscription" });
 
-    // Save or update subscription
-    await PushNotification.findOneAndUpdate(
+    await PushSub.findOneAndUpdate(
       { userId: req.user._id },
       { subscription },
       { upsert: true, new: true }
     );
-
-    return res.status(200).json({ success: true, message: "Subscribed to push notifications" });
-  } catch (err) {
-    console.error("Error subscribing to push notifications:", err);
-    return res.status(500).json({ error: "Failed to subscribe to push notifications" });
+    res.json({ success: true });
+  } catch (e) {
+    console.error("subscribe error", e);
+    res.status(500).json({ error: "Subscribe failed" });
   }
 });
 
-// Utility function to send push notification
-const sendPushNotification = async (userId, payload) => {
-  try {
-    const subscriptionDoc = await PushNotification.findOne({ userId });
-    if (!subscriptionDoc) return;
-
-    await webpush.sendNotification(subscriptionDoc.subscription, JSON.stringify(payload));
-  } catch (err) {
-    console.error("Error sending push notification:", err);
-    // Remove invalid subscription
-    if (err.statusCode === 410 || err.statusCode === 404) {
-      await PushNotification.deleteOne({ userId });
-    }
-  }
-};
-
-// POST /notificationPush/trigger
+// 3️⃣  Generic trigger endpoint
 router.post("/trigger", async (req, res) => {
   try {
     const { action, blogId, commentId, senderId, recipientId } = req.body;
     const sender = await User.findById(senderId);
     if (!sender) return res.status(404).json({ error: "Sender not found" });
 
-    let payload = {};
-    let recipientUserId;
+    let payload, recipientIds = [];
 
     switch (action) {
-      case "NEW_BLOG":
-        // Logic 1: Notify followers when a user posts a blog
+      case "NEW_BLOG": {
         const blog = await Blog.findById(blogId).populate("createdBy");
         if (!blog) return res.status(404).json({ error: "Blog not found" });
 
         const followers = await User.find({ _id: { $in: blog.createdBy.followers } });
         payload = {
           title: "New Blog Post",
-          body: `${blog.createdBy.fullname} posted: ${blog.title}`,
-          url: `/blog/${blog._id}`,
+          body:  `${blog.createdBy.fullname} posted: ${blog.title}`,
+          url:   `/blog/${blog._id}`
         };
+        recipientIds = followers.map(f => f._id);
 
-        for (const follower of followers) {
-          await sendPushNotification(follower._id, payload);
-          await Notification.create({
-            recipient: follower._id,
+        await Notification.insertMany(
+          recipientIds.map(id => ({
+            recipient: id,
             sender: blog.createdBy._id,
             type: "NEW_BLOG",
             blogId: blog._id,
-            message: `${blog.createdBy.fullname} posted: ${blog.title}`,
-            status: "PENDING",
-          });
-        }
+            message: payload.body
+          }))
+        );
         break;
+      }
 
-      case "LIKE_BLOG":
-        // Logic 2: Notify blog owner when someone likes their blog
-        const likedBlog = await Blog.findById(blogId).populate("createdBy");
-        if (!likedBlog) return res.status(404).json({ error: "Blog not found" });
-
-        recipientUserId = likedBlog.createdBy._id;
-        if (recipientUserId.toString() === senderId.toString()) {
-          return res.status(400).json({ error: "Cannot notify yourself" });
-        }
+      case "LIKE_BLOG": {
+        const blog = await Blog.findById(blogId).populate("createdBy");
+        if (!blog || senderId === blog.createdBy._id.toString()) return res.status(400).json({});
 
         payload = {
           title: "Blog Liked",
-          body: `${sender.fullname} liked your blog: ${likedBlog.title}`,
-          url: `/blog/${blogId}`,
+          body:  `${sender.fullname} liked: ${blog.title}`,
+          url:   `/blog/${blogId}`
         };
-        await sendPushNotification(recipientUserId, payload);
+        recipientIds = [blog.createdBy._id];
+
         await Notification.create({
-          recipient: recipientUserId,
+          recipient: blog.createdBy._id,
           sender: senderId,
           type: "LIKE",
           blogId,
-          message: `${sender.fullname} liked your blog: ${likedBlog.title}`,
-          status: "PENDING",
+          message: payload.body
         });
         break;
+      }
 
-      case "NEW_COMMENT":
-        // Logic 3: Notify blog owner when someone comments on their blog
+      case "NEW_COMMENT": {
         const comment = await Comment.findById(commentId).populate("blogId");
-        if (!comment || !comment.blogId) return res.status(404).json({ error: "Comment or blog not found" });
-
-        recipientUserId = comment.blogId.createdBy;
-        if (recipientUserId.toString() === senderId.toString()) {
-          return res.status(400).json({ error: "Cannot notify yourself" });
-        }
+        if (!comment) return res.status(404).json({ error: "Comment not found" });
+        const blog = await Blog.findById(comment.blogId);
+        if (!blog) return res.status(404).json({ error: "Blog not found" });
+        if (senderId === blog.createdBy.toString()) return res.status(400).json({});
 
         payload = {
           title: "New Comment",
-          body: `${sender.fullname} commented on your blog: ${comment.blogId.title}`,
-          url: `/blog/${comment.blogId._id}`,
+          body:  `${sender.fullname} commented on: ${blog.title}`,
+          url:   `/blog/${comment.blogId}`
         };
-        await sendPushNotification(recipientUserId, payload);
+        recipientIds = [blog.createdBy];
+
         await Notification.create({
-          recipient: recipientUserId,
+          recipient: blog.createdBy,
           sender: senderId,
           type: "NEW_COMMENT",
-          blogId: comment.blogId._id,
-          message: `${sender.fullname} commented on your blog: ${comment.blogId.title}`,
-          status: "PENDING",
+          blogId: comment.blogId,
+          message: payload.body
         });
         break;
+      }
 
-      case "LIKE_COMMENT":
-        // Logic 4: Notify comment owner when someone likes their comment
-        const likedComment = await Comment.findById(commentId).populate("createdBy");
-        if (!likedComment) return res.status(404).json({ error: "Comment not found" });
+      case "LIKE_COMMENT": {
+        const comment = await Comment.findById(commentId).populate("createdBy");
+        if (!comment) return res.status(404).json({ error: "Comment not found" });
+        if (senderId === comment.createdBy._id.toString()) return res.status(400).json({});
 
-        recipientUserId = likedComment.createdBy._id;
-        if (recipientUserId.toString() === senderId.toString()) {
-          return res.status(400).json({ error: "Cannot notify yourself" });
-        }
-
-        const blogForComment = await Blog.findById(likedComment.blogId);
+        const blog = await Blog.findById(comment.blogId);
         payload = {
           title: "Comment Liked",
-          body: `${sender.fullname} liked your comment on: ${blogForComment.title}`,
-          url: `/blog/${blogForComment._id}`,
+          body:  `${sender.fullname} liked your comment on: ${blog.title}`,
+          url:   `/blog/${comment.blogId}`
         };
-        await sendPushNotification(recipientUserId, payload);
+        recipientIds = [comment.createdBy._id];
+
         await Notification.create({
-          recipient: recipientUserId,
+          recipient: comment.createdBy._id,
           sender: senderId,
           type: "LIKE_COMMENT",
-          blogId: likedComment.blogId,
-          message: `${sender.fullname} liked your comment on: ${blogForComment.title}`,
-          status: "PENDING",
+          blogId: comment.blogId,
+          message: payload.body
         });
         break;
+      }
 
-      default:
-        return res.status(400).json({ error: "Invalid action" });
+      default: return res.status(400).json({ error: "Invalid action" });
     }
 
-    return res.status(200).json({ success: true, message: "Notifications sent" });
-  } catch (err) {
-    console.error("Error triggering notification:", err);
-    return res.status(500).json({ error: "Failed to trigger notification" });
+    // 4️⃣  Send push to every recipient who has subscribed
+    for (const rid of recipientIds) {
+      const record = await PushSub.findOne({ userId: rid });
+      if (record) {
+        try {
+          await webpush.sendNotification(record.subscription, JSON.stringify(payload));
+        } catch (err) {
+          console.error("Push failed", err);
+          if (err.statusCode === 410 || err.statusCode === 404) {
+            await PushSub.deleteOne({ userId: rid });
+          }
+        }
+      }
+    }
+
+    res.json({ success: true });
+  } catch (e) {
+    console.error("trigger error", e);
+    res.status(500).json({ error: "Trigger failed" });
   }
 });
 
