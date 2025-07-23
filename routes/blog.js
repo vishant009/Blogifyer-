@@ -2,62 +2,38 @@ const { Router } = require("express");
 const Blog = require("../models/blog");
 const Comment = require("../models/comments");
 const User = require("../models/user");
-const Notification = require("../models/notification");
+const { checkForAuthenticationCookie } = require("../middlewares/auth");
 const cloudinaryUpload = require("../middlewares/cloudinaryUpload");
-const fetch = require("node-fetch"); // Added
+const fetch = require("node-fetch");
 
 const router = Router();
 
-// GET /blog/addBlog
-router.get("/addBlog", (req, res) =>
-  res.render("addBlog", {
-    user: req.user || null,
-    error_msg: req.query.error_msg || null,
-    success_msg: req.query.success_msg || null,
-  })
-);
-
-// GET /blog/:id
-router.get("/:id", async (req, res) => {
+// POST /blog/addBlog
+router.post("/addBlog", checkForAuthenticationCookie("token"), cloudinaryUpload.single("coverImage"), async (req, res) => {
   try {
-    const blog = await Blog.findById(req.params.id)
-      .populate("createdBy", "fullname email profileImageURL")
-      .populate("likes", "fullname profileImageURL");
+    if (!req.user) {
+      return res.redirect("/user/signin?error_msg=Please log in to create a blog");
+    }
 
-    const comments = await Comment.find({ blogId: req.params.id })
-      .populate("createdBy", "fullname profileImageURL")
-      .sort({ createdAt: -1 });
-
-    if (!blog) return res.redirect("/?error_msg=Blog not found");
-
-    return res.render("blog", {
-      user: req.user || null,
-      blog,
-      comments,
-      error_msg: req.query.error_msg || null,
-      success_msg: req.query.success_msg || null,
-    });
-  } catch (err) {
-    console.error("Error loading blog:", err);
-    return res.redirect("/?error_msg=Failed to load blog");
-  }
-});
-
-// POST /blog
-router.post("/", cloudinaryUpload.single("coverImage"), async (req, res) => {
-  try {
-    if (!req.user) return res.redirect("/blog/addBlog?error_msg=Login required");
     const { title, body } = req.body;
+    if (!title?.trim() || !body?.trim()) {
+      return res.render("addBlog", {
+        user: req.user,
+        error_msg: "Title and body are required",
+        success_msg: null,
+      });
+    }
+
     const blog = await Blog.create({
-      body,
-      title,
+      title: title.trim(),
+      body: body.trim(),
+      coverImage: req.file ? req.file.path : null,
       createdBy: req.user._id,
-      coverImage: req.file ? req.file.path : null, // Cloudinary url
       likes: [],
     });
 
-    // Trigger push notification for new blog
-    await fetch(`http://localhost:${process.env.PORT}/notificationPush/trigger`, {
+    // Trigger notification for followers
+    await fetch(`http://${req.headers.host}/notificationPush/trigger`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -67,101 +43,133 @@ router.post("/", cloudinaryUpload.single("coverImage"), async (req, res) => {
       }),
     });
 
-    return res.redirect(`/blog/${blog._id}?success_msg=Blog created`);
+    return res.redirect(`/?success_msg=Blog created successfully`);
   } catch (err) {
     console.error("Error creating blog:", err);
-    return res.redirect("/blog/addBlog?error_msg=Failed to create blog");
+    return res.render("addBlog", {
+      user: req.user,
+      error_msg: "Failed to create blog",
+      success_msg: null,
+    });
   }
 });
 
-// DELETE /blog/:id
-router.delete("/:id", async (req, res) => {
-  try {
-    if (!req.user) return res.redirect("/?error_msg=Please log in to delete a blog");
-    const blog = await Blog.findById(req.params.id);
-    if (!blog) return res.redirect("/?error_msg=Blog not found");
-    if (blog.createdBy.toString() !== req.user._id.toString()) {
-      return res.redirect("/?error_msg=Unauthorized to delete this blog");
-    }
-    await Blog.findByIdAndDelete(req.params.id);
-    await Comment.deleteMany({ blogId: req.params.id });
-    await Notification.deleteMany({ blogId: req.params.id });
-    return res.redirect("/?success_msg=Blog deleted");
-  } catch (err) {
-    console.error("Error deleting blog:", err);
-    return res.redirect("/?error_msg=Failed to delete blog");
-  }
-});
-
-// POST /blog/:id/like
-router.post("/:id/like", async (req, res) => {
+// POST /blog/like/:id
+router.post("/like/:id", checkForAuthenticationCookie("token"), async (req, res) => {
   try {
     if (!req.user) {
-      return res.redirect(`/blog/${req.params.id}?error_msg=Please log in to like a blog`);
+      return res.redirect("/user/signin?error_msg=Please log in to like a blog");
     }
 
-    const blog = await Blog.findById(req.params.id).populate("createdBy", "fullname");
+    const blog = await Blog.findById(req.params.id);
     if (!blog) {
-      return res.redirect(`/blog/${req.params.id}?error_msg=Blog not found`);
+      return res.redirect(`/?error_msg=Blog not found`);
     }
 
-    if (blog.createdBy._id.toString() === req.user._id.toString()) {
-      return res.redirect(`/blog/${req.params.id}?error_msg=You cannot like your own blog`);
-    }
-
-    const user = await User.findById(req.user._id);
     const isLiked = blog.likes.includes(req.user._id);
-
     if (isLiked) {
-      blog.likes.pull(req.user._id);
-      user.likedBlogs.pull(req.params.id);
-      await Notification.deleteOne({
-        sender: req.user._id,
-        recipient: blog.createdBy._id,
-        type: "LIKE",
-        blogId: req.params.id,
-      });
+      blog.likes = blog.likes.filter((id) => !id.equals(req.user._id));
     } else {
       blog.likes.push(req.user._id);
-      user.likedBlogs.push(req.params.id);
-
-      // Check for existing like notification
-      const existingLikeNotification = await Notification.findOne({
-        sender: req.user._id,
-        recipient: blog.createdBy._id,
-        type: "LIKE",
-        blogId: req.params.id,
+      // Trigger notification for blog owner
+      await fetch(`http://${req.headers.host}/notificationPush/trigger`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "LIKE_BLOG",
+          blogId: blog._id,
+          senderId: req.user._id,
+          recipientId: blog.createdBy,
+        }),
       });
-
-      if (!existingLikeNotification) {
-        await Notification.create({
-          recipient: blog.createdBy._id,
-          sender: req.user._id,
-          type: "LIKE",
-          blogId: req.params.id,
-          message: `${req.user.fullname} liked your post: ${blog.title}`,
-          isRead: false,
-        });
-
-        // Trigger push notification for blog like
-        await fetch(`http://localhost:${process.env.PORT}/notificationPush/trigger`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "LIKE_BLOG",
-            blogId: req.params.id,
-            senderId: req.user._id,
-            recipientId: blog.createdBy._id,
-          }),
-        });
-      }
     }
 
-    await Promise.all([blog.save(), user.save()]);
-    return res.redirect(`/blog/${req.params.id}?success_msg=${isLiked ? "Blog unliked" : "Blog liked"}`);
+    await blog.save();
+    return res.redirect(`/?success_msg=${isLiked ? "Blog unliked" : "Blog liked"}`);
   } catch (err) {
     console.error("Error liking blog:", err);
-    return res.redirect(`/blog/${req.params.id}?error_msg=Failed to like blog`);
+    return res.redirect(`/?error_msg=Failed to like blog`);
+  }
+});
+
+// POST /blog/comment/:id
+router.post("/comment/:id", checkForAuthenticationCookie("token"), async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.redirect("/user/signin?error_msg=Please log in to comment");
+    }
+
+    const { content } = req.body;
+    if (!content?.trim()) {
+      return res.redirect(`/blog/${req.params.id}?error_msg=Comment cannot be empty`);
+    }
+
+    const blog = await Blog.findById(req.params.id);
+    if (!blog) {
+      return res.redirect(`/?error_msg=Blog not found`);
+    }
+
+    const comment = await Comment.create({
+      content: content.trim(),
+      blogId: blog._id,
+      createdBy: req.user._id,
+      likes: [],
+    });
+
+    // Trigger notification for blog owner
+    await fetch(`http://${req.headers.host}/notificationPush/trigger`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "NEW_COMMENT",
+        commentId: comment._id,
+        senderId: req.user._id,
+        recipientId: blog.createdBy,
+      }),
+    });
+
+    return res.redirect(`/blog/${req.params.id}?success_msg=Comment added`);
+  } catch (err) {
+    console.error("Error adding comment:", err);
+    return res.redirect(`/blog/${req.params.id}?error_msg=Failed to add comment`);
+  }
+});
+
+// POST /blog/comment/like/:id
+router.post("/comment/like/:id", checkForAuthenticationCookie("token"), async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.redirect("/user/signin?error_msg=Please log in to like a comment");
+    }
+
+    const comment = await Comment.findById(req.params.id);
+    if (!comment) {
+      return res.redirect(`/?error_msg=Comment not found`);
+    }
+
+    const isLiked = comment.likes.includes(req.user._id);
+    if (isLiked) {
+      comment.likes = comment.likes.filter((id) => !id.equals(req.user._id));
+    } else {
+      comment.likes.push(req.user._id);
+      // Trigger notification for comment owner
+      await fetch(`http://${req.headers.host}/notificationPush/trigger`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "LIKE_COMMENT",
+          commentId: comment._id,
+          senderId: req.user._id,
+          recipientId: comment.createdBy,
+        }),
+      });
+    }
+
+    await comment.save();
+    return res.redirect(`/blog/${comment.blogId}?success_msg=${isLiked ? "Comment unliked" : "Comment liked"}`);
+  } catch (err) {
+    console.error("Error liking comment:", err);
+    return res.redirect(`/?error_msg=Failed to like comment`);
   }
 });
 
