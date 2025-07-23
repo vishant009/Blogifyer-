@@ -7,7 +7,7 @@ const methodOverride = require("method-override");
 const moment = require("moment");
 const { ApolloServer } = require('@apollo/server');
 const { expressMiddleware } = require('@apollo/server/express4');
-const typeDefs = require('./models/schema');
+const typeDefs = require('./models/GraphQL);
 const resolvers = require('./services/resolvers');
 
 const settingsRoute = require("./routes/settings");
