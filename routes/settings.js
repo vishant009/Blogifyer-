@@ -29,7 +29,7 @@ router.post("/update-profile", cloudinaryUpload.single("profileImage"), async (r
       return res.redirect("/user/signin?error_msg=Please log in to update your profile");
     }
 
-    const { fullname, bio } = req.body;
+    const { fullname, bio, likePermissions, commentPermissions } = req.body;
     const update = {};
 
     if (fullname?.trim()) {
@@ -41,6 +41,20 @@ router.post("/update-profile", cloudinaryUpload.single("profileImage"), async (r
 
     if (bio?.trim()) {
       update.bio = bio.trim();
+    }
+
+    if (likePermissions) {
+      if (!["everyone", "followers", "following"].includes(likePermissions)) {
+        return res.redirect("/settings?error_msg=Invalid like permission setting");
+      }
+      update["blogPermissions.likes"] = likePermissions;
+    }
+
+    if (commentPermissions) {
+      if (!["everyone", "followers", "following"].includes(commentPermissions)) {
+        return res.redirect("/settings?error_msg=Invalid comment permission setting");
+      }
+      update["blogPermissions.comments"] = commentPermissions;
     }
 
     if (req.file) {
