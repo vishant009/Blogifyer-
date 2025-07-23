@@ -21,17 +21,10 @@ router.get("/", async (req, res) => {
       return res.redirect("/user/signin?error_msg=Please log in to view notifications");
     }
 
-    // Fetch notifications
     const notifications = await Notification.find({ recipient: req.user._id })
       .populate("sender", "fullname profileImageURL")
-      .populate("blogId", "title")
+      .populate("blogId", "title coverImage")
       .sort({ createdAt: -1 });
-
-    // Mark all notifications as read when the user visits the page
-    await Notification.updateMany(
-      { recipient: req.user._id, isRead: false },
-      { $set: { isRead: true, status: "READ" } }
-    );
 
     renderNotifications(res, req.user, notifications, {
       success_msg: req.query.success_msg,
@@ -52,6 +45,7 @@ router.get("/unread-count", async (req, res) => {
 
     const count = await Notification.countDocuments({
       recipient: req.user._id,
+      status: "PENDING",
       isRead: false,
     });
 
