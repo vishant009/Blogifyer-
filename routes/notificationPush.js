@@ -216,9 +216,19 @@ router.post("/trigger", async (req, res) => {
           title: "New Follow Request",
           body: `${sender.fullname} wants to follow you`,
           url: `/notification`,
+          image: sender.profileImageURL || "/images/default.png",
           timestamp: new Date().toISOString(),
         };
         await sendPushNotification(recipientId, payload);
+        await Notification.create({
+          recipient: recipientId,
+          sender: senderId,
+          type: "FOLLOW_REQUEST",
+          message: `${sender.fullname} wants to follow you`,
+          coverImage: sender.profileImageURL || "/images/default.png",
+          status: "PENDING",
+          isRead: false,
+        });
         break;
 
       default:
