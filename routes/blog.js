@@ -8,6 +8,39 @@ const fetch = require("node-fetch");
 
 const router = Router();
 
+// GET /blog/:id (View a single blog)
+router.get("/:id", async (req, res) => {
+  try {
+    const blog = await Blog.findById(req.params.id)
+      .populate("createdBy", "fullname email profileImageURL followers")
+      .populate("likes", "fullname profileImageURL");
+    if (!blog) {
+      return res.redirect("/?error_msg=Blog not found");
+    }
+
+    const comments = await Comment.find({ blogId: blog._id })
+      .populate("createdBy", "fullname profileImageURL")
+      .populate("likes", "fullname profileImageURL")
+      .sort({ createdAt: -1 });
+
+    const isFollowing = req.user
+      ? blog.createdBy.followers.some((follower) => follower._id.equals(req.user._id))
+      : false;
+
+    return res.render("blog", {
+      user: req.user || null,
+      blog,
+      comments,
+      isFollowing,
+      success_msg: req.query.success_msg || null,
+      error_msg: req.query.error_msg || null,
+    });
+  } catch (err) {
+    console.error("Error viewing blog:", err);
+    return res.redirect("/?error_msg=Failed to load blog");
+  }
+});
+
 // POST /blog/addBlog
 router.post("/addBlog", checkForAuthenticationCookie("token"), cloudinaryUpload.single("coverImage"), async (req, res) => {
   try {
@@ -32,7 +65,6 @@ router.post("/addBlog", checkForAuthenticationCookie("token"), cloudinaryUpload.
       likes: [],
     });
 
-    // Trigger notification for followers
     await fetch(`http://${req.headers.host}/notificationPush/trigger`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -71,7 +103,6 @@ router.post("/like/:id", checkForAuthenticationCookie("token"), async (req, res)
       blog.likes = blog.likes.filter((id) => !id.equals(req.user._id));
     } else {
       blog.likes.push(req.user._id);
-      // Trigger notification for blog owner
       await fetch(`http://${req.headers.host}/notificationPush/trigger`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -85,10 +116,10 @@ router.post("/like/:id", checkForAuthenticationCookie("token"), async (req, res)
     }
 
     await blog.save();
-    return res.redirect(`/?success_msg=${isLiked ? "Blog unliked" : "Blog liked"}`);
+    return res.redirect(`/blog/${req.params.id}?success_msg=${isLiked ? "Blog unliked" : "Blog liked"}`);
   } catch (err) {
     console.error("Error liking blog:", err);
-    return res.redirect(`/?error_msg=Failed to like blog`);
+    return res.redirect(`/blog/${req.params.id}?error_msg=Failed to like blog`);
   }
 });
 
@@ -116,7 +147,6 @@ router.post("/comment/:id", checkForAuthenticationCookie("token"), async (req, r
       likes: [],
     });
 
-    // Trigger notification for blog owner
     await fetch(`http://${req.headers.host}/notificationPush/trigger`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -152,7 +182,6 @@ router.post("/comment/like/:id", checkForAuthenticationCookie("token"), async (r
       comment.likes = comment.likes.filter((id) => !id.equals(req.user._id));
     } else {
       comment.likes.push(req.user._id);
-      // Trigger notification for comment owner
       await fetch(`http://${req.headers.host}/notificationPush/trigger`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -169,7 +198,7 @@ router.post("/comment/like/:id", checkForAuthenticationCookie("token"), async (r
     return res.redirect(`/blog/${comment.blogId}?success_msg=${isLiked ? "Comment unliked" : "Comment liked"}`);
   } catch (err) {
     console.error("Error liking comment:", err);
-    return res.redirect(`/?error_msg=Failed to like comment`);
+    return res.redirect(`/blog/${comment.blogId}?error_msg=Failed to like comment`);
   }
 });
 
