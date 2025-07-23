@@ -51,6 +51,18 @@ const userSchema = new Schema(
     resetPasswordExpires: {
       type: Date,
     },
+    blogPermissions: {
+      likes: {
+        type: String,
+        enum: ["everyone", "followers", "following"],
+        default: "everyone",
+      },
+      comments: {
+        type: String,
+        enum: ["everyone", "followers", "following"],
+        default: "everyone",
+      },
+    },
   },
   { timestamps: true }
 );
