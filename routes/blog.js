@@ -5,12 +5,16 @@ const User = require("../models/user");
 const { checkForAuthenticationCookie } = require("../middlewares/auth");
 const cloudinaryUpload = require("../middlewares/cloudinaryUpload");
 const fetch = require("node-fetch");
+const mongoose = require("mongoose");
 
 const router = Router();
 
 // GET /blog/:id (View a single blog)
 router.get("/:id", async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.redirect("/?error_msg=Invalid blog ID");
+    }
     const blog = await Blog.findById(req.params.id)
       .populate("createdBy", "fullname email profileImageURL followers")
       .populate("likes", "fullname profileImageURL");
@@ -86,16 +90,20 @@ router.post("/addBlog", checkForAuthenticationCookie("token"), cloudinaryUpload.
   }
 });
 
-// POST /blog/like/:id
+// POST /blog/like/:id (Handle like/unlike via AJAX)
 router.post("/like/:id", checkForAuthenticationCookie("token"), async (req, res) => {
   try {
     if (!req.user) {
-      return res.redirect("/user/signin?error_msg=Please log in to like a blog");
+      return res.status(401).json({ success: false, error: "Please log in to like a blog" });
+    }
+
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({ success: false, error: "Invalid blog ID" });
     }
 
     const blog = await Blog.findById(req.params.id);
     if (!blog) {
-      return res.redirect(`/?error_msg=Blog not found`);
+      return res.status(404).json({ success: false, error: "Blog not found" });
     }
 
     const isLiked = blog.likes.includes(req.user._id);
@@ -103,6 +111,7 @@ router.post("/like/:id", checkForAuthenticationCookie("token"), async (req, res)
       blog.likes = blog.likes.filter((id) => !id.equals(req.user._id));
     } else {
       blog.likes.push(req.user._id);
+      // Trigger notification for blog owner
       await fetch(`http://${req.headers.host}/notificationPush/trigger`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -116,10 +125,15 @@ router.post("/like/:id", checkForAuthenticationCookie("token"), async (req, res)
     }
 
     await blog.save();
-    return res.redirect(`/blog/${req.params.id}?success_msg=${isLiked ? "Blog unliked" : "Blog liked"}`);
+    return res.status(200).json({
+      success: true,
+      isLiked: !isLiked,
+      likeCount: blog.likes.length,
+      message: isLiked ? "Blog unliked" : "Blog liked",
+    });
   } catch (err) {
     console.error("Error liking blog:", err);
-    return res.redirect(`/blog/${req.params.id}?error_msg=Failed to like blog`);
+    return res.status(500).json({ success: false, error: "Failed to like blog" });
   }
 });
 
