@@ -1,4 +1,3 @@
-// public/push.js
 function urlBase64ToUint8Array(base64String) {
   try {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -82,10 +81,11 @@ async function pollNotifications() {
 
     const result = await response.json();
     if (result.success) {
-      const notificationLink = document.querySelector('a[href="/notification"].notification-badge');
+      const notificationLink = document.querySelector('a[href="/notification"]');
       if (notificationLink) {
-        notificationLink.setAttribute('data-count', result.count);
-        notificationLink.innerHTML = `<i class="fas fa-bell"></i> Notifications${result.count > 0 ? ` (${result.count})` : ''}`;
+        const count = result.count;
+        notificationLink.setAttribute('data-count', count);
+        notificationLink.innerHTML = `<i class="fas fa-bell"></i> Notifications${count > 0 ? ` (${count})` : ''}`;
       }
     }
   } catch (err) {
@@ -95,10 +95,12 @@ async function pollNotifications() {
 
 if (document.readyState === 'complete') {
   subscribeToPush();
+  pollNotifications(); // Initial call
   setInterval(pollNotifications, 30000);
 } else {
   window.addEventListener('load', () => {
     subscribeToPush();
+    pollNotifications(); // Initial call
     setInterval(pollNotifications, 30000);
   });
 }
