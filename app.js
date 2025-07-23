@@ -5,6 +5,10 @@ const path = require("path");
 const cookieParser = require("cookie-parser");
 const methodOverride = require("method-override");
 const moment = require("moment");
+const { ApolloServer } = require('@apollo/server');
+const { expressMiddleware } = require('@apollo/server/express4');
+const typeDefs = require('./models/schema');
+const resolvers = require('./services/resolvers');
 
 const settingsRoute = require("./routes/settings");
 const userRoute = require("./routes/user");
@@ -20,22 +24,13 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 
 // Validate environment variables
-const requiredEnvVars = ['MONGODB_URI', 'PORT', 'JWT_SECRET', 'EMAIL_USER', 'EMAIL_PASS', 'VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY'];
+const requiredEnvVars = ['MONGODB_URI', 'PORT', 'JWT_SECRET', 'EMAIL_USER', 'EMAIL_PASS', 'VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'];
 requiredEnvVars.forEach((varName) => {
   if (!process.env[varName]) {
     console.error(`Error: Environment variable ${varName} is missing`);
     process.exit(1);
   }
 });
-
-// Debug: Log environment variables (mask sensitive info)
-console.log('MONGODB_URI:', process.env.MONGODB_URI ? 'Set' : 'Not Set');
-console.log('PORT:', process.env.PORT);
-console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'Set' : 'Not Set');
-console.log('EMAIL_USER:', process.env.EMAIL_USER);
-console.log('EMAIL_PASS:', '****');
-console.log('VAPID_PUBLIC_KEY:', process.env.VAPID_PUBLIC_KEY ? 'Set' : 'Not Set');
-console.log('VAPID_PRIVATE_KEY:', '****');
 
 // MongoDB Connection
 mongoose
@@ -60,6 +55,24 @@ app.set("views", path.resolve("./views"));
 
 // Global Variables
 app.locals.moment = moment;
+
+// Initialize Apollo Server
+const apolloServer = new ApolloServer({
+  typeDefs,
+  resolvers,
+});
+
+async function startApolloServer() {
+  await apolloServer.start();
+  app.use('/graphql', expressMiddleware(apolloServer, {
+    context: ({ req }) => ({ user: req.user }),
+  }));
+}
+
+startApolloServer().catch((err) => {
+  console.error("Error starting Apollo Server:", err);
+  process.exit(1);
+});
 
 // Error Handling Utility
 const renderWithError = (res, view, data, errorMsg, redirectUrl = "/") => {
@@ -121,8 +134,6 @@ app.get("/search", async (req, res) => {
       })
         .populate("followers", "fullname profileImageURL")
         .sort({ fullname: 1 });
-
-      console.log("Found users:", users.map(u => u._id.toString()));
 
       blogs = await Blog.find({
         $or: [
