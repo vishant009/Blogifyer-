@@ -1,4 +1,3 @@
-// routes/user.js
 const { Router } = require("express");
 const User = require("../models/user");
 const Notification = require("../models/notification");
@@ -136,8 +135,8 @@ router.get("/verify-email/:id/:code", async (req, res) => {
       error: error.message || "Error verifying email",
       success_msg: null,
       showVerification: true,
-      email: req.query.email || "",
-      fullname: req.query.fullname || "",
+      email: pendingSignups.get(signupToken)?.email || req.query.email || "",
+      fullname: pendingSignups.get(signupToken)?.fullname || req.query.fullname || "",
       userId: signupToken,
       verificationCode: code,
     });
@@ -168,15 +167,15 @@ router.post("/verify-email/:id/:code", async (req, res) => {
 
     return res.redirect("/user/signin?success_msg=Email verified successfully");
   } catch (error) {
-    console.error("Verify email error:", error); // Fixed syntax error
+    console.error("Verify email error:", error);
     return res.render("signup", {
       title: "Sign Up",
       user: req.user || null,
       error: error.message || "Error verifying email",
       success_msg: null,
       showVerification: true,
-      email: req.query.email || "",
-      fullname: req.query.fullname || "",
+      email: pendingSignups.get(signupToken)?.email || req.query.email || "",
+      fullname: pendingSignups.get(signupToken)?.fullname || req.query.fullname || "",
       userId: signupToken,
       verificationCode: code,
     });
