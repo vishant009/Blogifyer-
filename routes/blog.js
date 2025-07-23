@@ -13,13 +13,13 @@ const router = Router();
 router.get("/:id", async (req, res) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) {
-      return res.redirect("/?error_msg=Invalid blog ID");
+      return res.status(400).json({ success: false, error: "Invalid blog ID" });
     }
     const blog = await Blog.findById(req.params.id)
       .populate("createdBy", "fullname email profileImageURL followers")
       .populate("likes", "fullname profileImageURL");
     if (!blog) {
-      return res.redirect("/?error_msg=Blog not found");
+      return res.status(404).json({ success: false, error: "Blog not found" });
     }
 
     const comments = await Comment.find({ blogId: blog._id })
@@ -41,7 +41,7 @@ router.get("/:id", async (req, res) => {
     });
   } catch (err) {
     console.error("Error viewing blog:", err);
-    return res.redirect("/?error_msg=Failed to load blog");
+    return res.status(500).json({ success: false, error: "Failed to load blog" });
   }
 });
 
@@ -93,6 +93,8 @@ router.post("/addBlog", checkForAuthenticationCookie("token"), cloudinaryUpload.
 // POST /blog/like/:id (Handle like/unlike via AJAX)
 router.post("/like/:id", checkForAuthenticationCookie("token"), async (req, res) => {
   try {
+    console.log(`Like request for blog ${req.params.id} by user ${req.user?._id}`);
+    
     if (!req.user) {
       return res.status(401).json({ success: false, error: "Please log in to like a blog" });
     }
