@@ -1,4 +1,3 @@
-// routes/notificationPush.js
 const { Router } = require("express");
 const webpush = require("web-push");
 const PushNotification = require("../models/notificationPush");
@@ -94,10 +93,15 @@ router.post("/trigger", async (req, res) => {
         const blog = await Blog.findById(blogId).populate("createdBy");
         if (!blog) return res.status(404).json({ error: "Blog not found" });
 
-        const followers = await User.find({ _id: { $in: blog.createdBy.followers } });
+        // Get followers, excluding the poster
+        const followers = await User.find({ 
+          _id: { $in: blog.createdBy.followers, $ne: blog.createdBy._id } 
+        });
+
         payload = {
           title: "New Blog Post",
           body: `${blog.createdBy.fullname} posted: ${blog.title}`,
+          image: blog.coverImage || "/images/default.png", // Include cover image
           url: `/blog/${blog._id}`,
         };
 
@@ -112,6 +116,7 @@ router.post("/trigger", async (req, res) => {
             status: "PENDING",
             isRead: false,
           });
+          console.log(`Notification sent to follower ${follower._id} for blog ${blog._id}`);
         }
         break;
 
@@ -127,6 +132,7 @@ router.post("/trigger", async (req, res) => {
         payload = {
           title: "Blog Liked",
           body: `${sender.fullname} liked your blog: ${likedBlog.title}`,
+          image: likedBlog.coverImage || "/images/default.png", // Include cover image
           url: `/blog/${blogId}`,
         };
         await sendPushNotification(recipientUserId, payload);
@@ -153,6 +159,7 @@ router.post("/trigger", async (req, res) => {
         payload = {
           title: "New Comment",
           body: `${sender.fullname} commented on your blog: ${comment.blogId.title}`,
+          image: comment.blogId.coverImage || "/images/default.png", // Include cover image
           url: `/blog/${comment.blogId._id}`,
         };
         await sendPushNotification(recipientUserId, payload);
@@ -180,6 +187,7 @@ router.post("/trigger", async (req, res) => {
         payload = {
           title: "Comment Liked",
           body: `${sender.fullname} liked your comment on: ${blogForComment.title}`,
+          image: blogForComment.coverImage || "/images/default.png", // Include cover image
           url: `/blog/${blogForComment._id}`,
         };
         await sendPushNotification(recipientUserId, payload);
