@@ -93,16 +93,13 @@ router.post("/trigger", async (req, res) => {
         const blog = await Blog.findById(blogId).populate("createdBy");
         if (!blog) return res.status(404).json({ error: "Blog not found" });
 
-        // Get followers, excluding the poster
-        const followers = await User.find({ 
-          _id: { $in: blog.createdBy.followers, $ne: blog.createdBy._id } 
-        });
-
+        const followers = await User.find({ _id: { $in: blog.createdBy.followers } });
         payload = {
           title: "New Blog Post",
           body: `${blog.createdBy.fullname} posted: ${blog.title}`,
-          image: blog.coverImage || "/images/default.png", // Include cover image
           url: `/blog/${blog._id}`,
+          image: blog.coverImage || "/images/default.png",
+          timestamp: blog.createdAt.toISOString(),
         };
 
         for (const follower of followers) {
@@ -113,10 +110,10 @@ router.post("/trigger", async (req, res) => {
             type: "NEW_BLOG",
             blogId: blog._id,
             message: `${blog.createdBy.fullname} posted: ${blog.title}`,
+            coverImage: blog.coverImage || "/images/default.png",
             status: "PENDING",
             isRead: false,
           });
-          console.log(`Notification sent to follower ${follower._id} for blog ${blog._id}`);
         }
         break;
 
@@ -132,8 +129,9 @@ router.post("/trigger", async (req, res) => {
         payload = {
           title: "Blog Liked",
           body: `${sender.fullname} liked your blog: ${likedBlog.title}`,
-          image: likedBlog.coverImage || "/images/default.png", // Include cover image
           url: `/blog/${blogId}`,
+          image: likedBlog.coverImage || "/images/default.png",
+          timestamp: new Date().toISOString(),
         };
         await sendPushNotification(recipientUserId, payload);
         await Notification.create({
@@ -142,6 +140,7 @@ router.post("/trigger", async (req, res) => {
           type: "LIKE",
           blogId,
           message: `${sender.fullname} liked your blog: ${likedBlog.title}`,
+          coverImage: likedBlog.coverImage || "/images/default.png",
           status: "PENDING",
           isRead: false,
         });
@@ -159,8 +158,9 @@ router.post("/trigger", async (req, res) => {
         payload = {
           title: "New Comment",
           body: `${sender.fullname} commented on your blog: ${comment.blogId.title}`,
-          image: comment.blogId.coverImage || "/images/default.png", // Include cover image
           url: `/blog/${comment.blogId._id}`,
+          image: comment.blogId.coverImage || "/images/default.png",
+          timestamp: new Date().toISOString(),
         };
         await sendPushNotification(recipientUserId, payload);
         await Notification.create({
@@ -169,26 +169,27 @@ router.post("/trigger", async (req, res) => {
           type: "NEW_COMMENT",
           blogId: comment.blogId._id,
           message: `${sender.fullname} commented on your blog: ${comment.blogId.title}`,
+          coverImage: comment.blogId.coverImage || "/images/default.png",
           status: "PENDING",
           isRead: false,
         });
         break;
 
       case "LIKE_COMMENT":
-        const likedComment = await Comment.findById(commentId).populate("createdBy");
-        if (!likedComment) return res.status(404).json({ error: "Comment not found" });
+        const likedComment = await Comment.findById(commentId).populate("createdBy").populate("blogId");
+        if (!likedComment || !likedComment.blogId) return res.status(404).json({ error: "Comment or blog not found" });
 
         recipientUserId = likedComment.createdBy._id;
         if (recipientUserId.toString() === senderId.toString()) {
           return res.status(400).json({ error: "Cannot notify yourself" });
         }
 
-        const blogForComment = await Blog.findById(likedComment.blogId);
         payload = {
           title: "Comment Liked",
-          body: `${sender.fullname} liked your comment on: ${blogForComment.title}`,
-          image: blogForComment.coverImage || "/images/default.png", // Include cover image
-          url: `/blog/${blogForComment._id}`,
+          body: `${sender.fullname} liked your comment on: ${likedComment.blogId.title}`,
+          url: `/blog/${likedComment.blogId._id}`,
+          image: likedComment.blogId.coverImage || "/images/default.png",
+          timestamp: new Date().toISOString(),
         };
         await sendPushNotification(recipientUserId, payload);
         await Notification.create({
@@ -196,7 +197,8 @@ router.post("/trigger", async (req, res) => {
           sender: senderId,
           type: "LIKE_COMMENT",
           blogId: likedComment.blogId,
-          message: `${sender.fullname} liked your comment on: ${blogForComment.title}`,
+          message: `${sender.fullname} liked your comment on: ${likedComment.blogId.title}`,
+          coverImage: likedComment.blogId.coverImage || "/images/default.png",
           status: "PENDING",
           isRead: false,
         });
@@ -214,6 +216,7 @@ router.post("/trigger", async (req, res) => {
           title: "New Follow Request",
           body: `${sender.fullname} wants to follow you`,
           url: `/notification`,
+          timestamp: new Date().toISOString(),
         };
         await sendPushNotification(recipientId, payload);
         break;
