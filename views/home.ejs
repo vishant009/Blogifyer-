@@ -6,7 +6,7 @@
   <title>Home | Blogify</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <style>
-    /* ----  EXACT SAME STYLES AS BEFORE  ---- */
+    /* ---- Existing Styles (Kept as Provided) ---- */
     :root {
       --bg: #0f0f11; --surface: rgba(255,255,255,.05); --up: rgba(255,255,255,.08);
       --border: rgba(255,255,255,.12); --accent: #00d2ff; --danger: #ff0050;
@@ -36,15 +36,86 @@
     .btn.follow { background: var(--success); } .btn.follow.following { background: var(--danger); }
     .btn.view { background: var(--up); border: 1px solid var(--border); } .btn.view:hover { background: var(--surface); }
     .btn.comment { background: #3498db; } .btn.comment:hover { background: #2980b9; }
-    .comment-popup { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); place-items: center; z-index: 1000; }
-    .comment-popup.active { display: grid; }
-    .comment-popup-content { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; width: 90%; max-width: 500px; position: relative; box-shadow: 0 8px 32px rgba(0,0,0,.4); }
-    .comment-popup-content h3 { margin-bottom: 1rem; font-size: 1.2rem; color: var(--text); }
-    .comment-popup-content textarea { width: 100%; padding: .75rem; border: 1px solid var(--border); border-radius: var(--radius); font-size: 1rem; background: var(--up); color: var(--text); margin-bottom: 1rem; resize: vertical; }
-    .comment-popup-content .close-btn { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--text); font-size: 1.2rem; cursor: pointer; }
-    .comment-popup-content .submit-btn { padding: .6rem 1.2rem; background: var(--accent); border: none; border-radius: 999px; color: #fff; font-size: .85rem; font-weight: 600; cursor: pointer; }
-    .comment-popup-content .submit-btn:hover { background: #00b7e0; }
-    @media(max-width:600px){
+
+    /* ---- Updated Comment Popup Styles ---- */
+    .comment-popup {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.7);
+      place-items: center;
+      z-index: 1000;
+      overflow-y: auto;
+    }
+    .comment-popup.active {
+      display: grid;
+      animation: fadeIn 0.3s var(--ease);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .comment-popup-content {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      width: 90%;
+      max-width: 500px;
+      position: relative;
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+      transform: translateY(100vh); /* Start off-screen at bottom */
+      transition: transform 0.4s var(--ease);
+    }
+    .comment-popup.active .comment-popup-content {
+      transform: translateY(0); /* Slide up to center */
+    }
+    .comment-popup-content h3 {
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+      color: var(--text);
+    }
+    .comment-popup-content textarea {
+      width: 100%;
+      padding: .75rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 1rem;
+      background: var(--up);
+      color: var(--text);
+      margin-bottom: 1rem;
+      resize: vertical;
+      min-height: 100px;
+    }
+    .comment-popup-content .close-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: color 0.2s var(--ease);
+    }
+    .comment-popup-content .close-btn:hover {
+      color: var(--accent);
+    }
+    .comment-popup-content .submit-btn {
+      padding: .6rem 1.2rem;
+      background: var(--accent);
+      border: none;
+      border-radius: 999px;
+      color: #fff;
+      font-size: .85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s var(--ease);
+    }
+    .comment-popup-content .submit-btn:hover {
+      background: #00b7e0;
+    }
+    @media(max-width:600px) {
       .card { padding: 1.2rem; }
       .btn { font-size: .8rem; padding: .5rem .9rem; }
       .comment-popup-content { width: 95%; }
@@ -123,21 +194,66 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const buttons = document.querySelectorAll('.btn.comment');
-      const popup   = document.getElementById('commentPopup');
-      const form    = document.getElementById('commentForm');
-      const close   = document.getElementById('closePopup');
+      const popup = document.getElementById('commentPopup');
+      const form = document.getElementById('commentForm');
+      const close = document.getElementById('closePopup');
+      const textarea = form.querySelector('textarea[name="content"]');
 
       buttons.forEach(btn => {
         btn.addEventListener('click', () => {
-          const id = btn.dataset.blogId;
-          form.action = `/comment/${id}`;
+          if (!<%= user ? 'true' : 'false' %>) {
+            alert('Please log in to add a comment');
+            window.location.href = '/user/signin?error_msg=Please log in to comment';
+            return;
+          }
+          const blogId = btn.dataset.blogId;
+          form.action = `/comment/${blogId}`;
           popup.classList.add('active');
-          form.content.focus();
+          textarea.value = ''; // Clear previous content
+          textarea.focus();
         });
       });
 
-      close.addEventListener('click',0 => popup.classList.remove('active'));
-      popup.addEventListener('click', e => { if (e.target === popup) popup.classList.remove('active'); });
+      close.addEventListener('click', () => {
+        popup.classList.remove('active');
+      });
+
+      popup.addEventListener('click', e => {
+        if (e.target === popup) {
+          popup.classList.remove('active');
+        }
+      });
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const content = formData.get('content').trim();
+        if (!content) {
+          alert('Comment cannot be empty');
+          return;
+        }
+
+        try {
+          const response = await fetch(form.action, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ content }),
+          });
+
+          const data = await response.json();
+          if (response.ok) {
+            popup.classList.remove('active');
+            window.location.href = `/blog/${form.action.split('/').pop()}?success_msg=Comment added successfully`;
+          } else {
+            alert(data.error || 'Failed to add comment');
+          }
+        } catch (err) {
+          console.error('Error submitting comment:', err);
+          alert('Failed to add comment');
+        }
+      });
     });
   </script>
 </body>
