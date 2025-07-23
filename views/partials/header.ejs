@@ -189,6 +189,18 @@
       background-color: var(--hover-color);
     }
 
+    .notification-badge[data-count]:not([data-count="0"])::after {
+      content: attr(data-count);
+      background: #e74c3c;
+      color: white;
+      border-radius: 50%;
+      padding: 2px 6px;
+      font-size: 0.8rem;
+      position: absolute;
+      top: -5px;
+      right: -5px;
+    }
+
     @media (max-width: 768px) {
       nav ul.main-nav {
         display: none;
@@ -293,7 +305,7 @@
           </button>
           <div class="dropdown-menu">
             <a href="/profile"><i class="fas fa-user"></i> Profile</a>
-            <a href="/notification"><i class="fas fa-bell"></i> Notifications</a>
+            <a href="/notification" class="notification-badge" data-count="0"><i class="fas fa-bell"></i> Notifications</a>
             <a href="/settings"><i class="fas fa-cog"></i> Settings</a>
             <a href="/user/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
           </div>
