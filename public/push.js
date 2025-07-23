@@ -81,11 +81,10 @@ async function pollNotifications() {
 
     const result = await response.json();
     if (result.success) {
-      const notificationLink = document.querySelector('a[href="/notification"]');
+      const notificationLink = document.querySelector('a[href="/notification"].notification-badge');
       if (notificationLink) {
-        const count = result.count;
-        notificationLink.setAttribute('data-count', count);
-        notificationLink.innerHTML = `<i class="fas fa-bell"></i> Notifications${count > 0 ? ` (${count})` : ''}`;
+        notificationLink.setAttribute('data-count', result.count);
+        notificationLink.innerHTML = `<i class="fas fa-bell"></i> Notifications${result.count > 0 ? ` (${result.count})` : ''}`;
       }
     }
   } catch (err) {
@@ -95,12 +94,10 @@ async function pollNotifications() {
 
 if (document.readyState === 'complete') {
   subscribeToPush();
-  pollNotifications(); // Initial call
   setInterval(pollNotifications, 30000);
 } else {
   window.addEventListener('load', () => {
     subscribeToPush();
-    pollNotifications(); // Initial call
     setInterval(pollNotifications, 30000);
   });
 }
